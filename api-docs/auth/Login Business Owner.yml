@@ -1,0 +1,36 @@
+info:
+  name: Login Business Owner
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/login"
+  headers:
+    - name: accept
+      value: "*/*"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "orng-spa@gold-spa.com",
+        "password": "P@$$w0rd120320"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+
+        bru.setEnvVar("business-access-token", response.accessToken)
+        bru.setEnvVar("business-refresh-token", response.refreshToken)
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

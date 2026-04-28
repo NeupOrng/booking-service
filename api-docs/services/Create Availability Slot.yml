@@ -1,0 +1,28 @@
+info:
+  name: Create Availability Slot
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{base-api-url}}/services/8e4e1b22-63b9-45a9-bbd2-669187ab1c62/availability-rules"
+  body:
+    type: json
+    data: |-
+      {
+        "dayOfWeek": "friday",
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "slotDurationMinutes": 60,
+        "capacity": 12,
+        "isActive": true
+      }
+  auth:
+    type: bearer
+    token: "{{business-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

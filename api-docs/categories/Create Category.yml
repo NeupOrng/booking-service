@@ -1,0 +1,27 @@
+info:
+  name: Create Category
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base-api-url}}/categories"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Spa Steam & Sonar",
+        "slug": "spa-steam-sonar",
+        "description": "Everything spa steam sonar related",
+        "colorHex": "#FF6B6B",
+        "sortOrder": 0
+      }
+  auth:
+    type: bearer
+    token: "{{admin-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

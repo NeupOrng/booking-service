@@ -1,0 +1,23 @@
+info:
+  name: Register Admin
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/register/admin"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "orngAdmin@bookking-service.com",
+        "password": "P@$$w0rd120320",
+        "fullName": "Super Orng Admin"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

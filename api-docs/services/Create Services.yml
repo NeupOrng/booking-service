@@ -1,0 +1,31 @@
+info:
+  name: Create Services
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base-api-url}}/services"
+  body:
+    type: json
+    data: |-
+      {
+        "businessId": "90cce1e1-ca63-4ddd-817d-b4507ada5ee7",
+        "categoryId": "3590a811-d1bf-4922-b84f-4481d999f2d2",
+        "name": "Hot Stone Steam",
+        "description": "Experience deep relaxation as smooth, heated basalt stones are combined with enveloping steam to melt away muscle tension and stress. This therapeutic treatment improves circulation, soothes aching joints, and leaves your skin feeling refreshed and renewed — all in just 30 minutes.",
+        "priceCents": 2500,
+        "durationMinutes": 30,
+        "coverImageUrl": "string",
+        "cancellationPolicy": "Free cancellation up to 24h before.",
+        "isActive": true
+      }
+  auth:
+    type: bearer
+    token: "{{business-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

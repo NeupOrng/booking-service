@@ -1,0 +1,36 @@
+info:
+  name: Login Admin
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/login"
+  headers:
+    - name: accept
+      value: "*/*"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "orngAdmin@bookking-service.com",
+        "password": "P@$$w0rd120320"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+
+        bru.setEnvVar("admin-access-token", response.accessToken)
+        bru.setEnvVar("admin-refresh-token", response.refreshToken)
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

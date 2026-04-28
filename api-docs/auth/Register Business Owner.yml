@@ -1,0 +1,30 @@
+info:
+  name: Register Business Owner
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/register/business-owner"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "orng-spa@gold-spa.com",
+        "password": "P@$$w0rd120320",
+        "fullName": "Orng",
+        "businessName": "Gold Spa",
+        "businessSlug": "gold-spa",
+        "businessDescription": "A luxury urban spa offering massage and wellness treatments.",
+        "businessAddress": "123 Calm Street, Melbourne VIC 3000",
+        "businessPhone": "+855882550515"
+      }
+  auth:
+    type: bearer
+    token: "{{admin-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
