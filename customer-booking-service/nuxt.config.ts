@@ -1,0 +1,29 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
+export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
+  devtools: { enabled: true },
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vueuse/core',
+        '@radix-icons/vue',
+        'vue-sonner',
+      ]
+    }
+  },
+  css: ['~/assets/css/tailwind.css'],
+  modules: [
+    '@nuxtjs/tailwindcss',
+    'shadcn-nuxt',
+    '@pinia/nuxt'
+  ],
+  shadcn: {
+    prefix: '',
+    componentDir: './app/components/ui'
+  }
+})

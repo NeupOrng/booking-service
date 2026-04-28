@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"^class-transformer$|^class-validator$\")",
+      "Bash(pnpm add *)",
+      "Bash(pnpm run *)",
+      "Bash(node -e \"const d = require\\('/Users/themacstore/Documents/booking-service/backend-booking-service/node_modules/.pnpm/drizzle-orm@0.45.2/node_modules/drizzle-orm/postgres-js/index.js'\\); console.log\\(Object.keys\\(d\\)\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
