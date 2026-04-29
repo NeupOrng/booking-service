@@ -12,11 +12,9 @@ export default () => ({
     },
   },
   storage: {
-    endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
-    region: process.env.S3_REGION || 'us-east-1',
-    accessKey: process.env.S3_ACCESS_KEY || 'minioadmin',
-    secretKey: process.env.S3_SECRET_KEY || 'minioadmin',
-    bucket: process.env.S3_BUCKET || 'booking-uploads',
-    presignExpirySeconds: parseInt(process.env.S3_PRESIGN_EXPIRY_SECONDS || '3600', 10),
+    url:                  process.env.SUPABASE_URL,
+    serviceRoleKey:       process.env.SUPABASE_SERVICE_ROLE_KEY,
+    bucket:               process.env.SUPABASE_BUCKET || 'booking-uploads',
+    presignExpirySeconds: parseInt(process.env.SUPABASE_PRESIGN_EXPIRY_SECONDS || '3600', 10),
   },
 });
