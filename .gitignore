@@ -3,8 +3,8 @@
 /backend-booking-service/node_modules
 /customer-booking-service/node_modules
 
-/backend-booking-service/.env*
-/backend-booking-service/.env*
+/backend-booking-service/.env
+/backend-booking-service/.env
 
 
 # Logs
