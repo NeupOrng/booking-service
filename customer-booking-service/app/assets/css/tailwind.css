@@ -3,69 +3,69 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Listeo Theme — light */
-    --background: 210 20% 97%;        /* #f5f7fa very light blue-gray */
-    --foreground: 224 32% 14%;        /* #1a2038 dark navy */
-    --card: 0 0% 100%;
-    --card-foreground: 224 32% 14%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 32% 14%;
-    --primary: 189 68% 38%;           /* #1fa8be Listeo teal */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 93%;
-    --secondary-foreground: 224 32% 14%;
-    --muted: 210 18% 93%;
-    --muted-foreground: 215 12% 48%;
-    --accent: 189 68% 94%;
-    --accent-foreground: 189 68% 30%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 16% 88%;
-    --input: 210 16% 88%;
-    --ring: 189 68% 38%;
-    --radius: 0.625rem;
-  }
+    :root {
+        /* Listeo Theme — light */
+        --background: 210 20% 97%; /* #f5f7fa very light blue-gray */
+        --foreground: 224 32% 14%; /* #1a2038 dark navy */
+        --card: 0 0% 100%;
+        --card-foreground: 224 32% 14%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 224 32% 14%;
+        --primary: 189 68% 38%; /* #1fa8be Listeo teal */
+        --primary-foreground: 0 0% 100%;
+        --secondary: 210 20% 93%;
+        --secondary-foreground: 224 32% 14%;
+        --muted: 210 18% 93%;
+        --muted-foreground: 215 12% 48%;
+        --accent: 189 68% 94%;
+        --accent-foreground: 189 68% 30%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 210 16% 88%;
+        --input: 210 16% 88%;
+        --ring: 189 68% 38%;
+        --radius: 0.625rem;
+    }
 
-  .dark {
-    --background: 224 32% 8%;
-    --foreground: 210 20% 96%;
-    --card: 224 32% 12%;
-    --card-foreground: 210 20% 96%;
-    --popover: 224 32% 12%;
-    --popover-foreground: 210 20% 96%;
-    --primary: 189 68% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 224 25% 18%;
-    --secondary-foreground: 210 20% 96%;
-    --muted: 224 25% 18%;
-    --muted-foreground: 215 12% 60%;
-    --accent: 224 25% 20%;
-    --accent-foreground: 189 68% 70%;
-    --destructive: 0 62% 35%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 224 20% 22%;
-    --input: 224 20% 22%;
-    --ring: 189 68% 45%;
-  }
+    .dark {
+        --background: 224 32% 8%;
+        --foreground: 210 20% 96%;
+        --card: 224 32% 12%;
+        --card-foreground: 210 20% 96%;
+        --popover: 224 32% 12%;
+        --popover-foreground: 210 20% 96%;
+        --primary: 189 68% 45%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 224 25% 18%;
+        --secondary-foreground: 210 20% 96%;
+        --muted: 224 25% 18%;
+        --muted-foreground: 215 12% 60%;
+        --accent: 224 25% 20%;
+        --accent-foreground: 189 68% 70%;
+        --destructive: 0 62% 35%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 224 20% 22%;
+        --input: 224 20% 22%;
+        --ring: 189 68% 45%;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 }
 
 /* Listeo card shadow utility */
 @layer utilities {
-  .listeo-shadow {
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.07);
-    transition: box-shadow 0.2s ease;
-  }
-  .listeo-shadow:hover {
-    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.13);
-  }
+    .listeo-shadow {
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.07);
+        transition: box-shadow 0.2s ease;
+    }
+    .listeo-shadow:hover {
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.13);
+    }
 }

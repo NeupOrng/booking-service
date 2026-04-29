@@ -1,0 +1,197 @@
+/* ============================================================
+   ListeoBook — Colors & Type Tokens
+   Source: customer-booking-service/app/assets/css/tailwind.css
+   ============================================================ */
+
+/* Inter from Google Fonts (substitution — codebase relies on system sans-serif via Tailwind defaults; confirm preferred webfont with brand owner) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    /* ---- Listeo palette (HSL components, used as `hsl(var(--token))`) ---- */
+    --background: 210 20% 97%; /* #f5f7fa page bg */
+    --foreground: 224 32% 14%; /* #1a2038 dark navy text */
+    --card: 0 0% 100%;
+    --card-foreground: 224 32% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 32% 14%;
+    --primary: 189 68% 38%; /* #1fa8be Listeo teal */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 224 32% 14%;
+    --muted: 210 18% 93%;
+    --muted-foreground: 215 12% 48%;
+    --accent: 189 68% 94%;
+    --accent-foreground: 189 68% 30%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 16% 88%;
+    --input: 210 16% 88%;
+    --ring: 189 68% 38%;
+    --radius: 0.625rem; /* 10px */
+
+    /* ---- Brand-named hex aliases for convenience ---- */
+    --color-bg: #f5f7fa;
+    --color-fg: #1a2038;
+    --color-fg-muted: #6b7280;
+    --color-card: #ffffff;
+    --color-border: #dde2e8;
+    --color-primary: #1fa8be; /* teal */
+    --color-primary-hover: #1b94a8;
+    --color-navy: #161c33; /* navbar / footer */
+    --color-navy-deep: #131830;
+    --color-accent: #e3f6f9; /* teal tint */
+    --color-destructive: #ef4444;
+
+    /* Category accents (from ServiceCard.vue) */
+    --color-cat-wellness-bg: #f0fdfa;
+    --color-cat-wellness-fg: #0f766e;
+    --color-cat-wellness-bd: #99f6e4;
+    --color-cat-beauty-bg: #fff1f2;
+    --color-cat-beauty-fg: #be123c;
+    --color-cat-beauty-bd: #fecdd3;
+    --color-cat-fitness-bg: #fffbeb;
+    --color-cat-fitness-fg: #b45309;
+    --color-cat-fitness-bd: #fde68a;
+
+    /* Status colors */
+    --color-status-confirmed: #1fa8be;
+    --color-status-pending-bg: #fef3c7;
+    --color-status-pending-fg: #92400e;
+    --color-status-completed-bg: #dcfce7;
+    --color-status-completed-fg: #166534;
+    --color-status-cancelled-bg: #f1f5f9;
+    --color-status-cancelled-fg: #475569;
+
+    /* Hero gradient (services page + auth) */
+    --gradient-hero: linear-gradient(
+        135deg,
+        hsl(224, 45%, 18%) 0%,
+        hsl(189, 68%, 28%) 100%
+    );
+    --gradient-hero-soft: linear-gradient(
+        145deg,
+        hsl(224, 45%, 18%) 0%,
+        hsl(189, 68%, 28%) 100%
+    );
+
+    /* Shadow system (Listeo) */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 2px 20px rgba(0, 0, 0, 0.07);
+    --shadow-card-hover: 0 6px 32px rgba(0, 0, 0, 0.13);
+    --shadow-lg: 0 10px 40px rgba(20, 30, 60, 0.12);
+    --shadow-navbar: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    /* Radii (Tailwind aligns: sm = r-4, md = r-2, lg = r, xl = r+4) */
+    --radius-sm: calc(var(--radius) - 4px); /* 6px */
+    --radius-md: calc(var(--radius) - 2px); /* 8px */
+    --radius-lg: var(--radius); /* 10px */
+    --radius-xl: calc(var(--radius) + 4px); /* 14px */
+    --radius-2xl: 1rem; /* 16px — used on hero search & cards */
+    --radius-pill: 9999px;
+
+    /* Spacing scale (Tailwind defaults — surfaced for clarity) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* ---- Typography ---- */
+    --font-sans:
+        'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+        sans-serif;
+    --font-mono:
+        'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Type scale (Tailwind tokens used in the app) */
+    --text-xs: 12px;
+    --leading-xs: 16px;
+    --text-sm: 14px;
+    --leading-sm: 20px;
+    --text-base: 16px;
+    --leading-base: 24px;
+    --text-lg: 18px;
+    --leading-lg: 28px;
+    --text-xl: 20px;
+    --leading-xl: 28px;
+    --text-2xl: 24px;
+    --leading-2xl: 32px;
+    --text-3xl: 30px;
+    --leading-3xl: 36px;
+    --text-4xl: 36px;
+    --leading-4xl: 40px;
+    --text-5xl: 48px;
+    --leading-5xl: 1;
+}
+
+/* ---- Semantic typography ---- */
+.h-display,
+h1.display {
+    font: 800 48px/1.05 var(--font-sans);
+    letter-spacing: -0.02em;
+    color: var(--color-fg);
+}
+h1,
+.h1 {
+    font: 700 36px/1.1 var(--font-sans);
+    letter-spacing: -0.015em;
+    color: var(--color-fg);
+}
+h2,
+.h2 {
+    font: 700 24px/1.25 var(--font-sans);
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+}
+h3,
+.h3 {
+    font: 600 20px/1.4 var(--font-sans);
+    color: var(--color-fg);
+}
+h4,
+.h4 {
+    font: 600 16px/1.5 var(--font-sans);
+    color: var(--color-fg);
+}
+p,
+.body {
+    font: 400 16px/1.5 var(--font-sans);
+    color: var(--color-fg);
+}
+.body-sm {
+    font: 400 14px/1.45 var(--font-sans);
+    color: var(--color-fg);
+}
+.muted {
+    color: var(--color-fg-muted);
+}
+.eyebrow {
+    font: 600 12px/1 var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+}
+.label {
+    font: 500 14px/1.4 var(--font-sans);
+    color: var(--color-fg);
+}
+code,
+.mono {
+    font: 500 13px/1.4 var(--font-mono);
+    color: var(--color-fg-muted);
+    letter-spacing: 0.01em;
+}
+
+/* Listeo card shadow utility (from app codebase) */
+.listeo-shadow {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease;
+}
+.listeo-shadow:hover {
+    box-shadow: var(--shadow-card-hover);
+}

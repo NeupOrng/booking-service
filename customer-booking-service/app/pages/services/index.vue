@@ -86,7 +86,7 @@ onMounted(() => {
         style="background-image: radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px); background-size: 60px 60px;">
       </div>
       <div class="container mx-auto max-w-3xl text-center relative z-10">
-        <h1 class="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
+        <h1 class="text-4xl text-white sm:text-5xl font-bold mb-4 leading-tight">
           Find &amp; Book Local Services
         </h1>
         <p class="text-white/75 text-lg mb-8">
