@@ -1,3 +1,11 @@
+export interface User {
+  id: string
+  fullName: string
+  email: string
+  avatarUrl?: string
+  role: 'customer' | 'business_owner' | 'admin'
+}
+
 export interface ServiceCategory {
   id: string
   name: string
@@ -11,35 +19,28 @@ export interface Business {
   logo_url: string | null
   address?: string
   about?: string
-}
-
-export interface Review {
-  id: string
-  reviewer_initials: string
-  rating: number
-  comment: string
-  created_at: string
+  phone?: string
+  slug?: string
+  description?: string
+  status?: string
 }
 
 export interface Service {
   id: string
   name: string
   description: string
-  price: number          // cents
+  price: number
   duration_minutes: number
   category: ServiceCategory
   business: Business
   cover_image_url: string | null
   next_available_slot: string | null
-  is_active?: boolean
-
-  // Detail fields
   long_description?: string
-  images?: string[]
   cancellation_policy?: string
-  reviews?: Review[]
   avg_rating?: number | null
   review_count?: number
+  is_active?: boolean
+  business_id?: string
 }
 
 export interface AvailabilitySlot {
@@ -48,32 +49,6 @@ export interface AvailabilitySlot {
   capacity: number
   bookedCount: number
   remainingCapacity: number
-}
-
-export interface Booking {
-  id: string
-  reference: string
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  service: { id: string; name: string; cover_image_url: string | null; duration_minutes: number; category: { slug: string } }
-  business: { id: string; name: string }
-  date: string           // YYYY-MM-DD
-  time: string           // HH:mm
-  price: number          // cents
-  cancelled_by: 'customer' | 'business' | 'admin' | null
-  cancelled_at: string | null
-  refund_status: 'refunded' | 'partial' | 'none' | null
-  refund_amount: number | null   // cents
-  can_cancel: boolean
-  can_reschedule: boolean
-  notes_from_customer?: string | null
-}
-
-export interface User {
-  id: string
-  fullName: string
-  email: string
-  avatarUrl?: string | null
-  role: 'customer' | 'business_owner' | 'admin'
 }
 
 export interface AvailabilityRule {
@@ -106,6 +81,8 @@ export interface BusinessProfile {
   logoUrl: string | null
   phone: string | null
   status: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Meta {
@@ -113,4 +90,11 @@ export interface Meta {
   page: number
   perPage: number
   lastPage: number
+}
+
+export interface BookingStats {
+  pending: number
+  confirmed: number
+  completed: number
+  cancelled: number
 }

@@ -1,55 +1,102 @@
 <script setup lang="ts">
-import { Briefcase, CalendarCheck, Clock, CheckSquare, ChevronRight } from 'lucide-vue-next'
+import { Briefcase, Calendar, CheckCircle2, Clock, ChevronRight, Loader2 } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
+import type { Booking } from '~/types'
+
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
-const { fetchMyBusiness, fetchMyServices, fetchBusinessBookings } = useBusinessOwner()
+const { fetchMyBusiness, fetchBusinessBookings, fetchMyServices, confirmBooking, cancelBusinessBooking } = useBusinessOwner()
 const { formatCurrency, formatBookingDate, formatBookingTime } = useFormatters()
 
 const business = ref<any>(null)
+const pendingBookings = ref<Booking[]>([])
 const recentServices = ref<any[]>([])
-const pendingBookings = ref<any[]>([])
-const stats = reactive({ services: 0, pending: 0, upcoming: 0, completed: 0 })
+const stats = reactive({ pending: 0, confirmed: 0, services: 0 })
 const loading = ref(true)
+const loadingRowId = ref<string | null>(null)
+const expandedDeclineId = ref<string | null>(null)
+const declineReason = ref('')
 
-onMounted(async () => {
-  try {
-    const [biz, svcRes, pendRes, upRes] = await Promise.all([
-      fetchMyBusiness(),
-      fetchMyServices({ perPage: 5 }),
-      fetchBusinessBookings({ status: 'pending', perPage: 5 }),
-      fetchBusinessBookings({ status: 'confirmed', perPage: 1 }),
-    ])
-    business.value = biz
-    recentServices.value = svcRes.data
-    pendingBookings.value = pendRes.data
-    stats.services = svcRes.meta.total
-    stats.pending = pendRes.meta.total
-    stats.upcoming = upRes.meta.total
-  } catch {}
-  loading.value = false
+onMounted(() => {
+  Promise.all([
+    fetchMyBusiness(),
+    fetchBusinessBookings({ status: 'pending', perPage: 5 }),
+    fetchBusinessBookings({ status: 'confirmed', perPage: 1 }),
+    fetchMyServices({ perPage: 5 }),
+  ])
+    .then(([biz, pendRes, confRes, svcRes]) => {
+      business.value = biz
+      pendingBookings.value = pendRes.data
+      stats.pending = pendRes.meta.total
+      stats.confirmed = confRes.meta.total
+      stats.services = svcRes.meta.total
+      recentServices.value = svcRes.data
+    })
+    .catch(() => toast.error('Failed to load dashboard'))
+    .finally(() => { loading.value = false })
 })
+
+async function handleConfirm(id: string) {
+  loadingRowId.value = id
+  try {
+    const updated = await confirmBooking(id)
+    const idx = pendingBookings.value.findIndex(b => b.id === id)
+    if (idx !== -1) pendingBookings.value.splice(idx, 1, updated)
+    stats.pending = Math.max(0, stats.pending - 1)
+    stats.confirmed++
+    toast.success('Booking confirmed')
+  } catch (err: any) {
+    toast.error(err?.data?.message ?? 'Failed to confirm')
+  } finally {
+    loadingRowId.value = null
+  }
+}
+
+async function handleDecline(id: string) {
+  loadingRowId.value = id
+  try {
+    const updated = await cancelBusinessBooking(id, declineReason.value || undefined)
+    const idx = pendingBookings.value.findIndex(b => b.id === id)
+    if (idx !== -1) pendingBookings.value.splice(idx, 1, updated)
+    stats.pending = Math.max(0, stats.pending - 1)
+    expandedDeclineId.value = null
+    declineReason.value = ''
+    toast.success('Booking declined')
+  } catch (err: any) {
+    toast.error(err?.data?.message ?? 'Failed to decline')
+  } finally {
+    loadingRowId.value = null
+  }
+}
 </script>
 
 <template>
   <div class="max-w-5xl mx-auto space-y-8">
     <div>
       <h1 class="text-2xl font-bold">Dashboard</h1>
-      <p class="text-muted-foreground text-sm mt-1">Welcome back{{ business ? `, ${business.name}` : '' }}</p>
+      <p class="text-sm text-muted-foreground mt-1">
+        Welcome back{{ business ? `, ${business.name}` : '' }}
+      </p>
     </div>
+
     <!-- Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div v-for="(s, i) in [
-        { label: 'Active services', value: stats.services, icon: Briefcase, color: 'bg-primary/10 text-primary' },
-        { label: 'Pending bookings', value: stats.pending, icon: Clock, color: 'bg-amber-100 text-amber-700' },
-        { label: 'Upcoming', value: stats.upcoming, icon: CalendarCheck, color: 'bg-blue-100 text-blue-700' },
-        { label: 'Completed', value: stats.completed, icon: CheckSquare, color: 'bg-green-100 text-green-700' },
-      ]" :key="i" class="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 listeo-shadow">
+      <div
+        v-for="(s, i) in [
+          { label: 'Pending', value: stats.pending, icon: Clock, color: 'bg-amber-100 text-amber-700' },
+          { label: 'Confirmed upcoming', value: stats.confirmed, icon: Calendar, color: 'bg-primary/10 text-primary' },
+          { label: 'My services', value: stats.services, icon: Briefcase, color: 'bg-muted text-muted-foreground' },
+          { label: 'Status', value: business?.status ?? '—', icon: CheckCircle2, color: 'bg-green-100 text-green-700' },
+        ]"
+        :key="i"
+        class="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 listeo-shadow"
+      >
         <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0', s.color]">
           <component :is="s.icon" class="w-5 h-5" />
         </div>
         <div>
           <p class="text-xs text-muted-foreground">{{ s.label }}</p>
-          <p class="text-2xl font-bold">{{ s.value }}</p>
+          <p class="text-xl font-bold capitalize">{{ s.value }}</p>
         </div>
       </div>
     </div>
@@ -62,20 +109,41 @@ onMounted(async () => {
           View all <ChevronRight class="w-3 h-3" />
         </NuxtLink>
       </div>
+
       <div v-if="loading" class="space-y-2">
-        <Skeleton v-for="i in 3" :key="i" class="h-12 w-full rounded-xl" />
+        <Skeleton v-for="i in 3" :key="i" class="h-14 w-full rounded-xl" />
       </div>
-      <div v-else-if="pendingBookings.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+      <p v-else-if="pendingBookings.length === 0" class="text-sm text-muted-foreground py-4 text-center">
         No pending bookings right now.
-      </div>
+      </p>
       <div v-else class="space-y-2">
-        <div v-for="b in pendingBookings" :key="b.id"
-          class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
-          <div>
-            <p class="font-medium">{{ b.service.name }}</p>
-            <p class="text-xs text-muted-foreground">{{ formatBookingDate(b.date) }} · {{ formatBookingTime(b.time) }}</p>
+        <div v-for="b in pendingBookings" :key="b.id">
+          <div class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
+            <div>
+              <p class="font-medium font-mono text-xs">{{ b.reference }}</p>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                {{ formatBookingDate(b.date) }} · {{ formatBookingTime(b.time) }} · {{ formatCurrency(b.price) }}
+              </p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <template v-if="loadingRowId === b.id">
+                <Loader2 class="w-4 h-4 animate-spin text-muted-foreground" />
+              </template>
+              <template v-else>
+                <Button size="sm" class="h-7 px-3 text-xs" @click="handleConfirm(b.id)">Confirm</Button>
+                <Button size="sm" variant="outline" class="h-7 px-3 text-xs text-destructive border-destructive" @click="expandedDeclineId = expandedDeclineId === b.id ? null : b.id">
+                  Decline
+                </Button>
+              </template>
+            </div>
           </div>
-          <span class="text-xs font-mono text-muted-foreground">{{ b.reference }}</span>
+          <div v-if="expandedDeclineId === b.id" class="mt-1 border border-destructive/20 bg-destructive/5 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+            <Input v-model="declineReason" placeholder="Reason (optional)" class="flex-1 h-9 text-sm" />
+            <div class="flex gap-2 shrink-0">
+              <Button variant="ghost" size="sm" @click="expandedDeclineId = null">Back</Button>
+              <Button variant="destructive" size="sm" @click="handleDecline(b.id)">Confirm decline</Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -91,25 +159,19 @@ onMounted(async () => {
       <div v-if="loading" class="space-y-2">
         <Skeleton v-for="i in 3" :key="i" class="h-12 w-full rounded-xl" />
       </div>
-      <div v-else-if="recentServices.length === 0" class="py-6 text-center text-sm text-muted-foreground">
-        No services yet. <NuxtLink to="/business/services/new" class="text-primary hover:underline">Add one</NuxtLink>
-      </div>
+      <p v-else-if="recentServices.length === 0" class="text-sm text-muted-foreground py-4 text-center">
+        No services yet.
+        <NuxtLink to="/business/services/new" class="text-primary hover:underline">Add one →</NuxtLink>
+      </p>
       <div v-else class="space-y-2">
-        <div v-for="s in recentServices" :key="s.id"
-          class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
-              <img v-if="s.cover_image_url" :src="s.cover_image_url" class="w-full h-full object-cover" />
-              <div v-else class="w-full h-full flex items-center justify-center text-lg font-bold text-muted-foreground/40">
-                {{ s.service.name.charAt(0) }}
-              </div>
-            </div>
-            <div>
-              <p class="font-medium">{{ s.service.name }}</p>
-              <p class="text-xs text-muted-foreground">{{ s.service.durationMinutes }} min · {{ formatCurrency(s.service.price) }}</p>
-            </div>
+        <div v-for="s in recentServices" :key="s.id" class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
+          <div>
+            <p class="font-medium">{{ s.name }}</p>
+            <p class="text-xs text-muted-foreground">{{ s.duration_minutes }} min · {{ formatCurrency(s.price) }}</p>
           </div>
-          <NuxtLink :to="`/business/services/${s.service.id}/edit`" class="text-xs text-primary hover:underline">Edit</NuxtLink>
+          <NuxtLink :to="`/business/services/${s.id}/availability`" class="text-xs text-primary hover:underline">
+            Manage
+          </NuxtLink>
         </div>
       </div>
     </div>

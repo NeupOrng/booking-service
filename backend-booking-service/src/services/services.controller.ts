@@ -117,7 +117,6 @@ export class ServicesController {
       meta: result.meta,
     };
   }
-
   
   @ApiBearerAuth('access-token')
   @Roles('business_owner', 'admin')

@@ -557,11 +557,12 @@ Response type: `BusinessResponseDto` (`@Exclude()`/`@Expose()` — exposes all b
 | `GET` | `/services/:id` | OptionalAuthGuard | 404 if not found or inactive |
 | `GET` | `/services/:id/availability` | OptionalAuthGuard | `?date=YYYY-MM-DD` required |
 
-#### Write endpoints (business_owner or admin)
+#### Write / business-owner read endpoints (business_owner or admin)
 | Method | Path | Notes |
 |---|---|---|
+| `GET` | `/services/by-business` | Returns the caller's own services (filtered by their business); same query params as `GET /services` |
 | `POST` | `/services` | business_owner must own the `businessId`; admin skips ownership check; returns `SelectService` |
-| `PATCH` | `/services/:id` | businessId is immutable; returns `SelectService` |
+| `PATCH` | `/services/:id` | businessId is immutable; returns joined row (service + business + category) |
 
 #### Availability rules (business_owner who owns the service, or admin)
 | Method | Path | Notes |
@@ -620,7 +621,9 @@ Frontend guidance: render `remainingCapacity` as "X spots left" when `capacity >
 - `updateBlock / listBlocks / deleteBlock` — ownership check then CRUD
 
 **Read / availability:**
-- `findAll(query)` — delegates to repo, computes `nextAvailableSlot` only when `sort === 'soonest'`
+- `findAll(query)` — delegates to repo, then calls private `formatServiceResponse(result, query)`
+- `findAllByBusinessUser(query, userId)` — delegates to `findAllByBusinessUserId(query, userId)`, then same `formatServiceResponse`; used by `GET /services/by-business`
+- `formatServiceResponse(result, query)` — private helper shared by both list methods; handles `soonest` sort + meta construction
 - `findById(id)` — returns null if not found or inactive (uses `findWithRelations`)
 - `getAvailability(serviceId, date)` — loads rules + blocks + bookedCounts in parallel → `AvailabilityService.computeSlots` → counts Redis locks via `KEYS slot_lock:{serviceId}:{date}:{time}:*` → returns `(SlotResult & { available })[]`
 - `getNextAvailableSlot(serviceId)` — iterates up to 14 days forward
@@ -641,11 +644,12 @@ Redis lock counting happens in `ServicesService.getAvailability()` AFTER `comput
 ### ServicesRepository methods
 
 **Services:**
-- `findAll(query)` — joined paginated query with dynamic filters and sort
+- `findAll(query)` — joined paginated query with dynamic filters and sort (isActive=true only)
+- `findAllByBusinessUserId(query, userId)` — same structure as `findAll` but first looks up the caller's active business by `ownerId = userId`, then adds `businessId` to the where conditions; used exclusively by `GET /services/by-business`
 - `findWithRelations(id)` — joined single-row fetch (service + business + category)
 - `findById(id)` — lean single-table select from `services` (no joins; used by ownership check)
 - `create(data)` — insert returning `SelectService`
-- `update(id, data)` — auto-sets `updatedAt: new Date()`
+- `update(id, data)` — updates the row, then **re-fetches with innerJoin** (service + business + category); returns the joined row, not just `SelectService`. Note: uses `innerJoin` on categories — returns null if `categoryId` is null.
 
 **Businesses:**
 - `findBusinessById(id)`, `findBusinessByOwnerId(ownerId)`, `findBusinessBySlug(slug)`

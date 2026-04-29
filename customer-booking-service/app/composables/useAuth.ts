@@ -23,7 +23,7 @@ function mapUser(data: BackendUser): User {
     fullName: data.fullName,
     email: data.email ?? '',
     avatarUrl: data.avatarUrl,
-    role: data.role,
+    role: data.role as User['role'],
   }
 }
 
@@ -93,23 +93,38 @@ export function useAuth() {
     await navigateTo('/')
   }
 
+  // Module-level singleton so concurrent callers from different composable
+  // instances (e.g. useBusinessOwner + useBooking both 401-ing on boot)
+  // share the same promise and only one POST /auth/refresh is sent.
+  const _tryRefreshPromise = useState<Promise<boolean> | null>('_tryRefreshPromise', () => null)
+
   async function tryRefresh(): Promise<boolean> {
     if (!refreshToken.value) return false
-    try {
-      const data = await $fetch<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
-        method: 'POST',
-        baseURL,
-        body: { refreshToken: refreshToken.value },
+
+    if (_tryRefreshPromise.value) return _tryRefreshPromise.value
+
+    const promise = $fetch<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
+      method: 'POST',
+      baseURL,
+      body: { refreshToken: refreshToken.value },
+    })
+      .then((data) => {
+        accessToken.value = data.accessToken
+        refreshToken.value = data.refreshToken
+        return true
       })
-      accessToken.value = data.accessToken
-      refreshToken.value = data.refreshToken
-      return true
-    } catch {
-      accessToken.value = null
-      refreshToken.value = null
-      user.value = null
-      return false
-    }
+      .catch(() => {
+        accessToken.value = null
+        refreshToken.value = null
+        user.value = null
+        return false
+      })
+      .finally(() => {
+        _tryRefreshPromise.value = null
+      })
+
+    _tryRefreshPromise.value = promise
+    return promise
   }
 
   function setFromOAuth(access: string, refresh: string) {

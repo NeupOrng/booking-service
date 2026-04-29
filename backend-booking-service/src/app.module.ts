@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServicesModule } from './services/services.module';
+import { BookingsModule } from './bookings/bookings.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -24,6 +25,7 @@ import configuration from './config/configuration';
     FilesModule,
     CategoriesModule,
     ServicesModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

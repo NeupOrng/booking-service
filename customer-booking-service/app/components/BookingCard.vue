@@ -1,136 +1,170 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { CheckCircle2, Loader2 } from 'lucide-vue-next'
-import type { Booking } from '~/types'
-import { toast } from 'vue-sonner'
+import { CheckCircle2, Loader2, AlertCircle } from 'lucide-vue-next'
+import type { Booking } from '~/models';
 
-const props = defineProps<{ booking: Booking }>()
-const emit = defineEmits<{ (e: 'cancelled', id: string): void }>()
+const props = defineProps<{
+  booking: Booking
+  expandedCancelId?: string | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'cancel', payload: { id: string; reason: string }): void
+  (e: 'close-cancel'): void
+}>()
 
 const { formatCurrency, formatBookingDate, formatBookingTime } = useFormatters()
-const { cancelBooking } = useBooking()
 
-const isCancelExpanded = ref(false)
-const cancelLoading = ref(false)
+const cancelReason = ref('')
+const isCancelExpanded = computed(() =>
+  props.expandedCancelId ? props.expandedCancelId === props.booking.id : false,
+)
 
-const badgeVariant = computed(() => {
+const badgeClass = computed(() => {
   switch (props.booking.status) {
-    case 'confirmed': return 'default'
-    case 'pending': return 'secondary' // 'warning' ideally but using secondary for fallback
-    case 'completed': return 'outline' // 'success' ideally
-    case 'cancelled': return 'secondary'
-    default: return 'outline'
+    case 'confirmed': return 'bg-primary/10 text-primary'
+    case 'pending':   return 'bg-amber-100 text-amber-800'
+    case 'completed': return 'bg-green-100 text-green-800'
+    case 'cancelled': return 'bg-muted text-muted-foreground'
+    default:          return 'bg-muted text-muted-foreground'
   }
 })
-
-const badgeColor = computed(() => {
-  if (props.booking.status === 'pending') return 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-  if (props.booking.status === 'completed') return 'bg-green-100 text-green-800 hover:bg-green-200'
-  return ''
-})
-
-async function onCancelConfirm() {
-  cancelLoading.value = true
-  try {
-    const success = await cancelBooking(props.booking.id)
-    if (success) {
-      toast.success('Booking cancelled successfully')
-      emit('cancelled', props.booking.id)
-      isCancelExpanded.value = false
-    }
-  } catch (err) {
-    toast.error('Failed to cancel booking')
-  } finally {
-    cancelLoading.value = false
-  }
-}
 </script>
 
 <template>
-  <Card class="overflow-hidden flex flex-col">
-    <div class="p-6 pb-4">
-      <div class="flex justify-between items-start mb-4">
-        <div class="flex gap-4">
-          <div class="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-            <img v-if="booking.service.cover_image_url" :src="booking.service.cover_image_url" class="w-full h-full object-cover"/>
-            <span v-else class="text-xl font-bold opacity-30">{{ booking.service.name.charAt(0) }}</span>
+  <Card class="overflow-hidden">
+    <div class="p-5">
+      <!-- Header row -->
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div class="flex items-center gap-3">
+          <!-- Service icon placeholder -->
+          <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Avatar class="w-14 h-14 border-2 border-border shrink-0">
+                <AvatarImage v-if="booking.business.logo" :src="booking.business.logo" />
+                <AvatarFallback class="text-lg font-bold">{{ booking.business.name.substring(0, 2) }}</AvatarFallback>
+              </Avatar>
           </div>
           <div>
-            <h3 class="font-medium text-lg">{{ booking.service.name }}</h3>
-            <p class="text-sm text-muted-foreground">{{ booking.business.name }}</p>
+            <p class="font-semibold text-foreground">{{ booking.business.name }}</p>
+            <p class="text-xs text-muted-foreground font-mono">ID: {{ booking.serviceId.slice(0, 8) }}…</p>
           </div>
         </div>
-        <Badge :variant="badgeVariant" :class="[badgeColor, 'capitalize']">{{ booking.status }}</Badge>
+        <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full capitalize', badgeClass]">
+          {{ booking.status }}
+        </span>
       </div>
 
-      <dl class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mt-6 p-4 bg-muted/20 rounded-xl">
-        <div class="flex flex-col">
-          <dt class="text-muted-foreground">Date</dt>
-          <dd class="font-medium">{{ formatBookingDate(booking.date) }}</dd>
+      <!-- Cancelled by business notice -->
+      <div
+        v-if="booking.cancelledBy === 'business'"
+        class="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs mb-4"
+      >
+        <AlertCircle class="w-3.5 h-3.5 shrink-0" />
+        Cancelled by the business{{ booking.cancellationReason ? ` — ${booking.cancellationReason}` : '' }}
+      </div>
+
+      <!-- Detail grid -->
+      <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm p-3 bg-muted/20 rounded-xl">
+        <div>
+          <dt class="text-xs text-muted-foreground mb-0.5">Date</dt>
+          <dd class="font-medium text-sm">{{ formatBookingDate(booking.date) }}</dd>
         </div>
-        <div class="flex flex-col">
-          <dt class="text-muted-foreground">Time</dt>
+        <div>
+          <dt class="text-xs text-muted-foreground mb-0.5">Time</dt>
           <dd class="font-medium">{{ formatBookingTime(booking.time) }}</dd>
         </div>
-        <div class="flex flex-col">
-          <dt class="text-muted-foreground">Duration</dt>
-          <dd class="font-medium">{{ booking.service.duration_minutes }} min</dd>
+        <div>
+          <dt class="text-xs text-muted-foreground mb-0.5">Duration</dt>
+          <dd class="font-medium">{{ booking.durationMinutes }} min</dd>
         </div>
-        <div class="flex flex-col">
-          <dt class="text-muted-foreground">Amount</dt>
+        <div>
+          <dt class="text-xs text-muted-foreground mb-0.5">Amount</dt>
           <dd class="font-medium">{{ formatCurrency(booking.price) }}</dd>
         </div>
       </dl>
-      <div class="mt-4 text-xs font-mono text-muted-foreground tracking-wide">
-        Ref: {{ booking.reference }}
-      </div>
+
+      <!-- Notes from customer -->
+      <p
+        v-if="booking.notesFromCustomer"
+        class="mt-3 text-sm italic text-muted-foreground border-l-2 border-border pl-3"
+      >
+        "{{ booking.notesFromCustomer }}"
+      </p>
+
+      <!-- Reference -->
+      <p class="mt-3 text-xs font-mono text-muted-foreground">Ref: {{ booking.reference }}</p>
     </div>
 
-    <!-- Actions Footer -->
-    <div class="border-t bg-muted/10 p-4 flex flex-wrap gap-3 items-center" v-if="booking.status === 'confirmed' || booking.status === 'pending'">
-      <NuxtLink :to="`/services/${booking.service.id}?reschedule=true`" v-if="booking.can_reschedule">
-         <Button variant="outline" size="sm">Reschedule</Button>
-      </NuxtLink>
-      <Button variant="outline" size="sm" class="text-destructive border-destructive" v-if="booking.can_cancel && !isCancelExpanded" @click="isCancelExpanded = true">
-        Cancel Booking
+    <!-- Actions — active bookings -->
+    <div
+      v-if="booking.status === 'confirmed' || booking.status === 'pending'"
+      class="border-t bg-muted/10 px-5 py-3 flex flex-wrap gap-2 items-center"
+    >
+      <Button
+        v-if="booking.canCancel && !isCancelExpanded"
+        variant="outline"
+        size="sm"
+        class="text-destructive border-destructive"
+        @click="emit('cancel', { id: booking.id, reason: '' })"
+      >
+        Cancel booking
       </Button>
-      <NuxtLink :to="`/services/${booking.service.id}`" class="ml-auto">
+      <NuxtLink :to="`/services/${booking.serviceId}`" class="ml-auto">
         <Button variant="ghost" size="sm">View service</Button>
       </NuxtLink>
     </div>
 
-    <div class="border-t bg-muted/10 p-4 flex flex-wrap gap-3 items-center" v-if="booking.status === 'completed'">
-      <NuxtLink :to="`/services/${booking.service.id}?review=true`">
-         <Button variant="outline" size="sm">Leave a review</Button>
+    <!-- Actions — completed -->
+    <div
+      v-if="booking.status === 'completed'"
+      class="border-t bg-muted/10 px-5 py-3 flex flex-wrap gap-2 items-center"
+    >
+      <NuxtLink :to="`/services/${booking.serviceId}?review=${booking.id}#reviews`">
+        <Button variant="outline" size="sm">Leave a review</Button>
       </NuxtLink>
-      <NuxtLink :to="`/services/${booking.service.id}`" class="ml-auto">
+      <NuxtLink :to="`/services/${booking.serviceId}`" class="ml-auto">
         <Button variant="ghost" size="sm">Book again</Button>
       </NuxtLink>
     </div>
 
-    <div class="border-t bg-muted/10 p-4 flex flex-wrap gap-3 items-center" v-if="booking.status === 'cancelled'">
-      <div v-if="booking.refund_status === 'refunded'" class="flex items-center gap-2 text-sm text-green-600 font-medium">
+    <!-- Actions — cancelled -->
+    <div
+      v-if="booking.status === 'cancelled'"
+      class="border-t bg-muted/10 px-5 py-3 flex flex-wrap gap-2 items-center"
+    >
+      <div v-if="booking.refundIssued" class="flex items-center gap-1.5 text-sm text-green-600 font-medium">
         <CheckCircle2 class="w-4 h-4" />
-        {{ formatCurrency(booking.refund_amount || 0) }} refunded
+        {{ formatCurrency(booking.refundAmount ?? 0) }} refunded
       </div>
-      <NuxtLink :to="`/services/${booking.service.id}`" class="ml-auto">
+      <NuxtLink :to="`/services/${booking.serviceId}`" class="ml-auto">
         <Button variant="ghost" size="sm">Book again</Button>
       </NuxtLink>
     </div>
 
-    <!-- Inline Cancellation Panel -->
-    <div v-if="isCancelExpanded" class="border-t border-destructive/20 bg-destructive/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-       <div>
-         <p class="font-medium text-destructive mb-1">Are you sure you want to cancel?</p>
-         <p class="text-sm text-muted-foreground">You will receive a full refund of {{ formatCurrency(booking.price) }}.</p>
-       </div>
-       <div class="flex gap-2 shrink-0">
-          <Button variant="ghost" size="sm" @click="isCancelExpanded = false">Keep booking</Button>
-          <Button variant="destructive" size="sm" @click="onCancelConfirm" :disabled="cancelLoading">
-            <Loader2 v-if="cancelLoading" class="w-4 h-4 mr-2 animate-spin" />
-            Yes, cancel booking
-          </Button>
-       </div>
+    <!-- Inline cancel panel -->
+    <div
+      v-if="isCancelExpanded"
+      class="border-t border-destructive/20 bg-destructive/5 px-5 py-4"
+    >
+      <p class="text-sm text-muted-foreground mb-3">
+        Are you sure? This appointment will be cancelled.
+      </p>
+      <Input
+        v-model="cancelReason"
+        placeholder="Reason (optional)"
+        class="mb-3 text-sm"
+      />
+      <div class="flex gap-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          @click="emit('cancel', { id: booking.id, reason: cancelReason })"
+        >
+          Yes, cancel
+        </Button>
+        <Button variant="outline" size="sm" @click="emit('close-cancel')">
+          Keep booking
+        </Button>
+      </div>
     </div>
   </Card>
 </template>

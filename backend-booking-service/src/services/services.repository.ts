@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { DatabaseService } from '../database/database.service';
 import {
   availabilityBlocks,
   availabilityRules,
+  bookings,
   businesses,
   categories,
   InsertAvailabilityBlock,
@@ -88,7 +89,6 @@ export class ServicesRepository {
           eq(businesses.status, 'active')
         )
       ).limit(1);
-      console.log(businessUser);
     conditions.push(eq(services.businessId, businessUser[0].id))
     if (query.q) {
       conditions.push(
@@ -237,13 +237,19 @@ export class ServicesRepository {
       );
   }
 
-  async findBookedSlots(serviceId: string, _date: string): Promise<{ bookingTime: string; count: number }[]> {
-    // TODO: implement when BookingsModule adds the bookings table
-    // Query: SELECT booking_time, COUNT(*) as count FROM bookings
-    //        WHERE service_id = serviceId AND booking_date = date
-    //        AND status IN ('pending', 'confirmed') GROUP BY booking_time
-    void serviceId;
-    return [];
+  async findBookedSlots(serviceId: string, date: string): Promise<{ bookingTime: string; count: number }[]> {
+    const rows = await this.db.db
+      .select({ bookingTime: bookings.bookingTime, count: count() })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.serviceId, serviceId),
+          eq(bookings.bookingDate, date),
+          inArray(bookings.status, ['pending', 'confirmed']),
+        ),
+      )
+      .groupBy(bookings.bookingTime);
+    return rows.map((r) => ({ bookingTime: r.bookingTime, count: Number(r.count) }));
   }
 
   // ── Availability rules ──────────────────────────────────────────────────────
