@@ -141,7 +141,7 @@ Table definitions live in `src/database/schemas/`:
 
 All table exports have a `// @ts-ignore: TS2883` comment above them — CJS declaration-emit false positive, not a runtime issue (see §18).
 
-All imports in feature modules still point to `'../database/schema'` — the barrel forwards everything.
+All imports in feature modules still point to `'../database/schema'` — the barrel forwards everything (now 5 lines, includes bookings.schema).
 
 ### Table reference
 
@@ -262,6 +262,37 @@ One-off date overrides.
 | reason | text | nullable |
 | createdAt | timestamp | defaultNow |
 
+#### `bookings`
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | auto |
+| serviceId | uuid FK→services.id | not null, onDelete: restrict |
+| customerId | uuid FK→users.id | not null, onDelete: restrict |
+| businessId | uuid FK→businesses.id | not null, denormalised for query performance |
+| reference | varchar(20) | not null — format `#BK-XXXXX` (5 random digits) |
+| bookingDate | varchar(10) | not null — `'YYYY-MM-DD'` |
+| bookingTime | varchar(8) | not null — `'HH:mm'` |
+| status | varchar(30) | default `'pending'` — `pending \| confirmed \| completed \| cancelled` |
+| priceCents | integer | snapshot of price at booking time |
+| durationMinutes | integer | snapshot of duration at booking time |
+| cancelledBy | varchar(30) | nullable — `'customer' \| 'business' \| 'admin'` |
+| cancelledAt | timestamp | nullable |
+| completedAt | timestamp | nullable — set when status transitions to `'completed'` |
+| refundStatus | varchar(20) | nullable — `'refunded' \| 'partial' \| 'none'` |
+| refundAmount | integer | nullable — cents |
+| notesFromCustomer | text | nullable |
+| createdAt / updatedAt | timestamp | |
+
+**Status transitions enforced in `BookingsService`:**
+```
+pending   → confirmed  (business owner only, via PATCH /bookings/business/:id/status)
+pending   → cancelled  (customer via POST /bookings/my/:id/cancel, or business)
+confirmed → completed  (business owner only)
+confirmed → cancelled  (customer or business)
+completed → BLOCKED    (ForbiddenException — cannot cancel completed booking)
+cancelled → BLOCKED    (ForbiddenException — already cancelled)
+```
+
 #### `slot_locks`
 Short-lived Redis-backed reservation audit log.
 
@@ -284,7 +315,8 @@ Short-lived Redis-backed reservation audit log.
 `SelectBusiness`, `InsertBusiness`, `SelectService`, `InsertService`,
 `SelectAvailabilityRule`, `InsertAvailabilityRule`,
 `SelectAvailabilityBlock`, `InsertAvailabilityBlock`,
-`SelectSlotLock`, `InsertSlotLock`
+`SelectSlotLock`, `InsertSlotLock`,
+`SelectBooking`, `InsertBooking`
 
 ---
 
@@ -658,7 +690,7 @@ Redis lock counting happens in `ServicesService.getAvailability()` AFTER `comput
 **Availability data (read by public/availability pipeline):**
 - `findRulesByDayOfWeek(serviceId, dayOfWeek)` — filters `isActive = true`
 - `findBlocksByDate(serviceId, date)`
-- `findBookedSlots(serviceId, date)` → `{ bookingTime: string; count: number }[]` — returns `[]` placeholder until BookingsModule
+- `findBookedSlots(serviceId, date)` → `{ bookingTime: string; count: number }[]` — queries `bookings` table, groups by `bookingTime` where `status IN ('pending', 'confirmed')`; fully implemented (no longer a placeholder)
 
 **Rules CRUD:** `findAllRules` (ordered by `dayOfWeek asc`), `findRuleById`, `createRule`, `updateRule`, `deleteRule`  
 — Note: `availabilityRules` has no `updatedAt` column; never add one to `.set()` calls.
@@ -675,7 +707,90 @@ Redis lock counting happens in `ServicesService.getAvailability()` AFTER `comput
 
 ---
 
-## 18. Known Quirks and Workarounds
+## 18. Implemented Modules — BookingsModule (`src/bookings/`)
+
+BookingsModule imports `ServicesModule` (for `ServicesService` — availability check + business lookup). `DatabaseService` and `RedisService` are auto-injected (both are `@Global()`).
+
+### Endpoints — `BookingsController` base path `/bookings`
+
+All endpoints behind class-level `JwtAuthGuard`.
+
+#### Customer endpoints (any authenticated user)
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/bookings` | Create booking — checks slot availability, creates record, writes Redis lock + audit row |
+| `GET` | `/bookings/my` | Paginated list with `?status=upcoming\|past\|cancelled` filter |
+| `GET` | `/bookings/my/stats` | `{ upcoming, completed, totalSpent }` |
+| `POST` | `/bookings/my/:id/cancel` | Customer cancels; 403 if not owner / already cancelled / completed |
+
+#### Business owner endpoints (JwtAuthGuard + RolesGuard(`business_owner`, `admin`))
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/bookings/business` | Paginated list with `?status=`, `?dateFrom=`, `?dateTo=` |
+| `PATCH` | `/bookings/business/:id/status` | Body `{ status: 'confirmed'\|'completed' }` — validates transition table |
+| `POST` | `/bookings/business/:id/cancel` | Business cancels; returns `404` (not `403`) if booking doesn't belong to business — intentional no-info-leak |
+
+### BookingsService key methods
+- `createBooking(dto, customerId)` — `findById` service check → `getAvailability` slot check → insert booking → write `slot_locks` audit row → set Redis key `slot_lock:{serviceId}:{date}:{HH:mm}:{bookingId}` with 24h TTL
+- `listMyBookings` / `myStats` / `cancelMyBooking` — customer operations with ownership check (`booking.customerId === user.id`)
+- `listBusinessBookings(userId, userRole, query)` — looks up business via `findBusinessByOwner(userId)` then queries by `businessId`; admin can pass `query.businessId` to override
+- `updateBookingStatus(bookingId, dto, userId, userRole)` — validates `VALID_BUSINESS_TRANSITIONS[currentStatus]` contains the requested status
+- `cancelBusinessBooking` — returns `404` for bookings not owned by the business (no info leak)
+
+**Status transition table (enforced server-side):**
+```ts
+const VALID_BUSINESS_TRANSITIONS = {
+  pending:   ['confirmed', 'cancelled'],
+  confirmed: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+};
+```
+
+**Redis lifecycle for bookings:**
+- On create: `SET slot_lock:{serviceId}:{date}:{HH:mm}:{bookingId} <customerId> EX 86400`
+- On cancel: `DEL slot_lock:{serviceId}:{date}:{HH:mm}:{bookingId}`
+- The key pattern is counted by `getAvailability` to reduce `remainingCapacity` immediately
+
+### BookingsRepository key methods
+- `create(data)` — insert into `bookings`, returns `SelectBooking`
+- `writeSlotLockAudit(serviceId, slotDate, slotTime, userId, bookingId)` — inserts into `slot_locks` with `expiresAt` set to the appointment datetime (never expires before the booking)
+- `findById(id)` — full join: `bookings` + `services` (id, name, coverImageUrl, durationMinutes) + `categories` (slug, leftJoin) + `businesses` (id, name, **logo**) + `users` (id, fullName, email)
+- `findByCustomer(customerId, query)` — paginated with status→date filter logic; ordered by `bookingDate desc`
+- `customerStats(customerId)` — 3 parallel queries; `totalSpent` uses `COALESCE(SUM(priceCents), 0)` for status IN ('confirmed', 'completed')
+- `findByBusiness(businessId, query)` — paginated; ordered by `bookingDate asc, bookingTime asc`
+- `update(id, data)` — updates row, auto-sets `updatedAt: new Date()`
+
+### Booking response shape (`toBookingResponse`)
+Every booking response always includes **both** `business` and `customer` as full objects (not conditionally stripped). The `includeCustomer` flag only controls whether `customer` is re-projected to `{ id, fullName, email }` — if false, the full customer object from the DB join is still present:
+
+```ts
+{
+  id, reference, status,
+  service: { id, name, coverImageUrl, durationMinutes, category: { slug } },
+  business: { id, name, logo },   // logo = logoUrl from businesses table
+  customer: { id, fullName, email },
+  bookingDate, bookingTime, priceCents,
+  cancelledBy, cancelledAt, completedAt,
+  refundStatus, refundAmount, notesFromCustomer,
+  canCancel,      // true when status in ('pending', 'confirmed')
+  canReschedule,  // true when status in ('pending', 'confirmed')
+}
+```
+
+> **Always include `logo` (mapped from `businesses.logoUrl`) in the business sub-object of booking responses.** Omitting it caused a bug that had to be fixed.
+> **Always include `completedAt` in booking responses** — the field exists on the `bookings` table and must not be dropped from schema or response.
+
+### DTOs
+- `CreateBookingDto` — `serviceId`, `bookingDate` (`@IsDateString`), `bookingTime` (`/^\d{2}:\d{2}$/`), optional `notesFromCustomer`
+- `CancelBookingDto` — optional `reason` (`@MaxLength(500)`)
+- `UpdateBookingStatusDto` — `status: @IsIn(['confirmed', 'completed'])`
+- `CustomerBookingListQueryDto` — `status?: 'upcoming'|'past'|'cancelled'`, `page`, `perPage`
+- `BusinessBookingListQueryDto` — `status?: 'pending'|'confirmed'|'completed'|'cancelled'`, `dateFrom?`, `dateTo?`, `page`, `perPage`
+
+---
+
+## 19. Known Quirks and Workarounds
 
 ### TS2883 on all Drizzle table exports
 Every `export const <table> = pgTable(...)` in the `src/database/schemas/` files has a `// @ts-ignore: TS2883` comment above it. This suppresses "inferred type cannot be named" which is triggered by Drizzle's generic FK types combined with `declaration: true` in tsconfig. It is a CJS type-portability false positive — not a runtime issue.
@@ -697,16 +812,17 @@ Express `Request` type doesn't include `user`. Passport adds it at runtime.
 
 ---
 
-## 19. What Is NOT Yet Implemented
+## 20. What Is NOT Yet Implemented
 
-- **BookingsModule** — booking creation, listing, management. `ServicesRepository.findBookedSlots` returns `[]` as a placeholder with a `// TODO` comment.
-- **Slot lock writes** — Redis slot lock keys are read in `ServicesService.getAvailability()` but nothing writes them yet. BookingsModule will write keys in format `slot_lock:{serviceId}:{date}:{HH:mm}:{bookingId}` during checkout, with expiry matching checkout timeout. Before confirming a booking, BookingsModule must verify `bookedCount + activeLockCount < capacity` and throw `ConflictException('This time slot is fully booked')` if not.
-- **Payments** — payment processing integration.
+- **Payments** — payment processing integration; `refundStatus` / `refundAmount` columns exist on `bookings` but nothing writes them.
 - **Email verification** — `isEmailVerified` flag is set/reset in code but no email-sending flow exists.
+- **Booking reschedule** — `canReschedule` flag is returned in responses but no reschedule endpoint exists.
+- **Business booking stats** — no `/bookings/business/stats` endpoint; aggregate counts must be done client-side from the paginated list.
+- **Booking reason storage** — `CancelBookingDto.reason` is accepted but silently discarded; no `reason` column exists on the `bookings` table.
 
 ---
 
-## 20. File & Folder Map
+## 21. File & Folder Map
 
 ```
 src/
@@ -720,13 +836,14 @@ src/
 ├── database/
 │   ├── database.module.ts            @Global
 │   ├── database.service.ts           Drizzle + postgres-js connection
-│   ├── schema.ts                     Re-export barrel (4 lines)
+│   ├── schema.ts                     Re-export barrel (5 lines — includes bookings)
 │   └── schemas/
 │       ├── users.schema.ts           users, refreshTokens, oauthAccounts + types
 │       ├── files.schema.ts           files + types
 │       ├── categories.schema.ts      categories + types
-│       └── services.schema.ts        businesses, services, availabilityRules (+ capacity col),
-│                                     availabilityBlocks, slotLocks + types
+│       ├── services.schema.ts        businesses, services, availabilityRules (+ capacity col),
+│       │                             availabilityBlocks, slotLocks + types
+│       └── bookings.schema.ts        bookings (+ completedAt col) + types
 │
 ├── redis/
 │   ├── redis.module.ts               @Global
@@ -806,4 +923,17 @@ src/
         ├── update-availability-rule.dto.ts
         ├── create-availability-block.dto.ts
         └── update-availability-block.dto.ts
+│
+└── bookings/
+    ├── bookings.module.ts            imports ServicesModule; exports BookingsService
+    ├── bookings.controller.ts        POST /bookings; GET|POST /bookings/my/*; GET|PATCH|POST /bookings/business/*
+    ├── bookings.service.ts           createBooking, listMyBookings, myStats, cancelMyBooking,
+    │                                 listBusinessBookings, updateBookingStatus, cancelBusinessBooking
+    ├── bookings.repository.ts        create, writeSlotLockAudit, findById, update,
+    │                                 findByCustomer, customerStats, findByBusiness
+    └── dto/
+        ├── create-booking.dto.ts     serviceId, bookingDate, bookingTime, notesFromCustomer?
+        ├── cancel-booking.dto.ts     reason? (@MaxLength 500)
+        ├── update-status.dto.ts      status: @IsIn(['confirmed','completed'])
+        └── booking-list-query.dto.ts CustomerBookingListQueryDto + BusinessBookingListQueryDto
 ```

@@ -77,7 +77,6 @@ function toServiceSummary(row: any) {
 
 function toServiceDetail(row: any) {
   const { service, business, category } = row;
-  Logger.log('before format', row)
   return {
     id: service.id,
     name: service.name,

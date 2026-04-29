@@ -380,10 +380,10 @@ All pages: `middleware: ['auth', 'role']`, `layout: 'business'`
 ### `pages/business/services/index.vue` — Service list
 - Debounced search, paginated
 - Per-row: thumbnail, name, category badge, price, duration, active/inactive badge
-- Activate/Deactivate toggle via `updateService(id, { isActive: !current })`
-- Links to `/business/services/:id/edit` and `/business/services/:id/availability`
-- **Note:** template currently references `s.service.name` — service objects returned by the API
-  may be nested differently; verify against actual backend response shape
+- Service data is **camelCase** from backend (`s.priceCents`, `s.durationMinutes`, `s.isActive`, `s.coverImageUrl`) — `mapService()` is NOT applied here (see P3 in §16)
+- Edit button → `NuxtLink` to `/business/services/:id/edit` (dedicated page, not inline Sheet — see P5 in §16)
+- Availability button → `/business/services/:id/availability`
+- Activate/Deactivate toggle via `updateService(id, { isActive: !s.isActive })`
 
 ### `pages/business/services/new.vue` — Create service
 - Uses `BusinessServiceForm` component
@@ -502,13 +502,146 @@ When wiring up: map `bookingDate→date`, `bookingTime→time`, `priceCents→pr
 | Rescheduling | Button in `BookingCard` links to `/services/:id?reschedule=` but no logic |
 | Avatar upload | `POST /files/upload` spec exists in integration doc; not wired |
 | Mobile bottom sheet | `BookingPanel` has no mobile Sheet variant — desktop sticky only |
-| `business/services/index.vue` | Template references `s.service.name` / `s.service.priceCents` — verify against actual API response shape; may need re-mapping if backend returns flat objects |
-| `business/index.vue` dashboard | Has `{{ recentServices }}` debug output in template — remove before shipping |
-| Bearer token explicit injection | `useBusinessOwner.ts` relies on `$api` plugin for token injection; task to add explicit token headers was interrupted |
+| `business/services/index.vue` | Uses raw camelCase API shape — see P3 in §16 (resolved) |
+| `business/index.vue` debug output | `{{ recentServices }}` removed by developer (resolved) |
+| Bearer token injection | `useBusinessOwner.ts` now relies on `$api` plugin; explicit headers were added and later simplified back to plugin-only (resolved) |
 
 ---
 
-## 16. Environment
+## 16. Patterns & Pitfalls — Lessons from Past Fixes
+
+Concrete bugs that were introduced by AI-generated code and corrected by the developer.
+Each entry states the rule, the root cause, and how to apply it going forward.
+
+---
+
+### P1 — `useState` (and all Nuxt composables) must be called inside a function, never at module scope
+
+**Rule:** Never call `useState`, `useNuxtApp`, `useRoute`, or any auto-imported Nuxt composable
+at module level (i.e. directly at the top level of a `.ts` file, outside any function body).
+
+**What broke:** `useBusinessOwner.ts` had:
+```ts
+// ❌ WRONG — called at module scope
+const _cachedBusiness = useState<BusinessProfile | null>('ownerBusiness', () => null)
+
+export function useBusinessOwner() { ... }
+```
+
+Nuxt threw: *"A composable that requires access to the Nuxt instance was called outside of a
+plugin, Nuxt hook, Nuxt middleware, or Vue setup function."*
+
+**Fix:** Move the call inside the exported function. `useState` with a key is still a shared
+singleton — the key ensures all callers get the same `Ref` regardless of how many times the
+composable is instantiated:
+```ts
+// ✅ CORRECT
+export function useBusinessOwner() {
+  const _cachedBusiness = useState<BusinessProfile | null>('ownerBusiness', () => null)
+  ...
+}
+```
+
+**Apply:** Any time you want module-level shared state in a composable, use `useState(<key>)`
+*inside* the function, not outside it.
+
+---
+
+### P2 — Availability rule `dayOfWeek` must be lowercase when sent to the backend
+
+**Rule:** The backend availability rules API expects `dayOfWeek` as a **lowercase string**
+(`'monday'`, `'tuesday'`, … `'sunday'`). The UI display uses title-case (`'Monday'`), but
+`.toLowerCase()` must be applied before any `createRule` / `updateRule` call.
+
+**What broke:** `availability.vue` sent `dayOfWeek: editingRule.value.dayOfWeek` directly.
+The `DAYS` array is `['Monday','Tuesday',...]` so the backend received `'Monday'` and rejected or
+silently mishandled the rule.
+
+**Fix (applied by developer):**
+```ts
+const created = await createRule(serviceId, {
+  dayOfWeek: editingRule.value.dayOfWeek.toLowerCase(), // ← required
+  ...
+})
+```
+
+**Apply:** Whenever building a payload that includes `dayOfWeek`, always call `.toLowerCase()`
+on the value even if it looks correct, since the display array is title-case.
+
+---
+
+### P3 — Business owner service list uses raw camelCase; `mapService` is NOT applied
+
+**Rule:** `fetchMyServices()` in `useBusinessOwner.ts` calls `/services/by-business` and returns
+the raw backend camelCase shape. Do **not** apply `mapService()` or use snake_case field names
+when working with service data from this composable.
+
+| Business owner service field | Value |
+|---|---|
+| Name | `s.name` |
+| Price (cents) | `s.priceCents` |
+| Duration | `s.durationMinutes` |
+| Active flag | `s.isActive` |
+| Cover image URL | `s.coverImageUrl` |
+| Category | `s.category.name` / `s.category.id` |
+
+Customer-facing service data (from `useBooking.fetchServices` / `fetchService`) IS mapped through
+`mapService()` and uses snake_case (`s.price`, `s.duration_minutes`, `s.cover_image_url`, etc.).
+**These are two different shapes — do not mix them.**
+
+---
+
+### P4 — `fetchMyServices` does not need a `businessId` param
+
+**Rule:** `GET /services/by-business` is an authenticated endpoint that derives the business from
+the JWT token. **Do not** call `fetchMyBusiness()` first to get a `businessId` and pass it as a
+query param. Just call the endpoint directly.
+
+**What was wrong:** An earlier version of `useBusinessOwner.fetchMyServices` called
+`fetchMyBusiness()` to get the ID, then passed `businessId: biz.id` as a query param.
+The developer simplified it to pass the query params directly without `businessId`.
+
+---
+
+### P5 — Business edit forms navigate to a dedicated page, not inline Sheet
+
+**Rule:** For complex service-management forms (create, edit service details), use navigation
+to a dedicated page (`/business/services/:id/edit`), not an inline `Sheet` component.
+
+**What broke:** An AI-generated edit button opened a `Sheet` drawer with a full inline form
+(cover image upload, all service fields, categories fetch, etc.). The developer reverted this
+to a simple `NuxtLink` to the existing edit page.
+
+**When to use Sheet vs page navigation:**
+- **Sheet** — quick single-action confirmations, small forms (< 3 fields), reason inputs
+- **Page navigation** — complex forms with validation, multiple sections, image management
+
+---
+
+### P6 — `Booking` type is imported from `~/models`, not `~/types` in several business files
+
+Several files (including `BookingCard.vue`, `BookingRow.vue`, `business/bookings.vue`,
+`business/index.vue`) import `Booking` from `~/models`:
+```ts
+import type { Booking } from '~/models'
+```
+This is intentional — the `~/models` module contains a different Booking shape used by the
+business owner portal. Do not change these imports to `~/types`. If adding new business owner
+components that work with booking data, import from `~/models`.
+
+---
+
+### P7 — `nuxt.config.ts` CSS array includes two stylesheets
+
+```ts
+css: ['~/assets/css/tailwind.css', '~/assets/css/listeo.css']
+```
+
+Both must be present. Do not remove `listeo.css` or reorder the entries.
+
+---
+
+## 17. Environment
 
 ```env
 NUXT_PUBLIC_API_BASE=http://localhost:3001

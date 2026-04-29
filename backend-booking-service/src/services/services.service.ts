@@ -423,8 +423,6 @@ export class ServicesService {
         result: { rows: any[]; total: number },
         query: ServiceListQueryDto,
     ) {
-
-        Logger.log("row before format", result)
         const { rows, total } = result;
         const page = query.page ?? 1;
         const perPage = query.perPage ?? 12;
@@ -460,7 +458,6 @@ export class ServicesService {
                 nextAvailableSlot: null
             }));
         }
-        Logger.log("row after format", data)
         return {
             data,
             meta: {

@@ -230,7 +230,6 @@ export class ServicesRepository {
             const inserted = await txn.insert(services)
                 .values(data)
                 .returning();
-            Logger.log('res', inserted);
             const result = await txn.select({
                 service: services,
                 business: businesses,
@@ -251,7 +250,6 @@ export class ServicesRepository {
                 .set({ ...data, updatedAt: new Date() })
                 .where(eq(services.id, id))
                 .returning();
-            Logger.log(row);
             const res = await this.db.db
                 .select({
                     service: services,

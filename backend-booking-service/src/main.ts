@@ -8,12 +8,16 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // express-session must come before everything — passport-google-oauth20 stores
+  // the OAuth state param in req.session before the redirect to Google.
+  // saveUninitialized: true is required so the session is persisted even for
+  // new (unauthenticated) requests, allowing the state to survive the redirect.
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'dev-session-secret',
       resave: false,
-      saveUninitialized: false,
-      cookie: { maxAge: 10 * 60 * 1000 }, // 10 min — only needed for OAuth handshake
+      saveUninitialized: true,
+      cookie: { maxAge: 10 * 60 * 1000 },
     }),
   );
 
