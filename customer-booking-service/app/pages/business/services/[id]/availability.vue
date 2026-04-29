@@ -79,7 +79,7 @@ async function saveRule() {
       if (idx !== -1) rules.value.splice(idx, 1, updated)
     } else {
       const created = await createRule(serviceId, {
-        dayOfWeek: editingRule.value.dayOfWeek,
+        dayOfWeek: editingRule.value.dayOfWeek.toLowerCase(),
         startTime: editingRule.value.startTime,
         endTime: editingRule.value.endTime,
         slotDurationMinutes: editingRule.value.slotDurationMinutes,

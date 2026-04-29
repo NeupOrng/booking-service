@@ -3,6 +3,7 @@ import {
     ConflictException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
@@ -10,6 +11,7 @@ import {
     SelectAvailabilityBlock,
     SelectAvailabilityRule,
     SelectBusiness,
+    SelectCategory,
     SelectService,
 } from '../database/schema';
 import { SlotResult } from './availability.service';
@@ -43,7 +45,7 @@ export class ServicesService {
         private readonly availabilityService: AvailabilityService,
         private readonly categoriesService: CategoriesService,
         private readonly redisService: RedisService,
-    ) {}
+    ) { }
 
     // ── Public read ─────────────────────────────────────────────────────────────
 
@@ -56,7 +58,7 @@ export class ServicesService {
 
     async findAllByBusinessUser(query: ServiceListQueryDto, userId: string) {
         // Assuming the repository needs the userId to filter by business user
-        const result = await this.servicesRepository.findAllByBusinessUserId(query,userId);
+        const result = await this.servicesRepository.findAllByBusinessUserId(query, userId);
         return this.formatServiceResponse(result, query);
     }
 
@@ -169,7 +171,7 @@ export class ServicesService {
         dto: CreateServiceDto,
         userId: string,
         userRole: string,
-    ): Promise<SelectService> {
+    ): Promise<{ service: SelectService, business: SelectBusiness, category: SelectCategory }> {
         if (userRole !== 'admin') {
             const business = await this.servicesRepository.findBusinessById(
                 dto.businessId,
@@ -421,6 +423,8 @@ export class ServicesService {
         result: { rows: any[]; total: number },
         query: ServiceListQueryDto,
     ) {
+
+        Logger.log("row before format", result)
         const { rows, total } = result;
         const page = query.page ?? 1;
         const perPage = query.perPage ?? 12;
@@ -430,7 +434,9 @@ export class ServicesService {
         if (query.sort === 'soonest') {
             data = await Promise.all(
                 rows.map(async (row) => ({
-                    ...row,
+                    service: row.service,
+                    business: row.business,
+                    category: row.category,
                     nextAvailableSlot: await this.getNextAvailableSlot(
                         row.service.id,
                     ),
@@ -447,9 +453,14 @@ export class ServicesService {
                 );
             });
         } else {
-            data = rows.map((row) => ({ ...row, nextAvailableSlot: null }));
+            data = rows.map((row) => ({
+                service: row.service,
+                business: row.business,
+                category: row.category,
+                nextAvailableSlot: null
+            }));
         }
-
+        Logger.log("row after format", data)
         return {
             data,
             meta: {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2 } from 'lucide-vue-next'
-import type { Booking } from '~/types'
+import type { Booking } from '~/models'
 
 const props = defineProps<{
   booking: Booking
@@ -28,7 +28,7 @@ const statusClass: Record<string, string> = {
 }
 
 const initials = computed(() => {
-  const id = props.booking.user_id ?? ''
+  const id = props.booking.userId ?? ''
   return id.slice(0, 2).toUpperCase()
 })
 </script>
@@ -45,11 +45,12 @@ const initials = computed(() => {
         <div class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
           {{ initials }}
         </div>
-        <span class="text-xs text-muted-foreground truncate">{{ booking.user_id.slice(0, 6) }}…</span>
+        <!-- Service Id -->
+        <span class="text-xs text-muted-foreground truncate">{{ booking.serviceId.slice(0, 8)}}</span>
       </div>
 
-      <!-- Service ID -->
-      <span class="text-xs text-muted-foreground truncate font-mono">{{ booking.service_id.slice(0, 8) }}…</span>
+      <!-- Service Name -->
+      <span class="text-xs text-muted-foreground truncate font-mono">{{ booking.service.name  }}</span>
 
       <!-- Date & time -->
       <div>
@@ -58,7 +59,7 @@ const initials = computed(() => {
       </div>
 
       <!-- Duration -->
-      <span class="text-xs text-muted-foreground">{{ booking.duration_minutes }}m</span>
+      <span class="text-xs text-muted-foreground">{{ booking.durationMinutes }}m</span>
 
       <!-- Amount -->
       <span class="text-sm font-medium">{{ formatCurrency(booking.price) }}</span>
@@ -95,7 +96,7 @@ const initials = computed(() => {
       <div class="grid grid-cols-2 gap-2 text-sm">
         <div><p class="text-xs text-muted-foreground">Date</p><p class="font-medium text-xs">{{ formatBookingDate(booking.date) }}</p></div>
         <div><p class="text-xs text-muted-foreground">Time</p><p class="font-medium">{{ formatBookingTime(booking.time) }}</p></div>
-        <div><p class="text-xs text-muted-foreground">Duration</p><p class="font-medium">{{ booking.duration_minutes }} min</p></div>
+        <div><p class="text-xs text-muted-foreground">Duration</p><p class="font-medium">{{ booking.durationMinutes }} min</p></div>
         <div><p class="text-xs text-muted-foreground">Amount</p><p class="font-medium">{{ formatCurrency(booking.price) }}</p></div>
       </div>
       <div class="flex gap-2 pt-1" v-if="!isLoading">

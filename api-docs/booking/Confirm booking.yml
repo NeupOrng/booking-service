@@ -1,0 +1,17 @@
+info:
+  name: Confirm booking
+  type: http
+  seq: 2
+
+http:
+  method: PATCH
+  url: |-
+    
+    {{base-api-url/bookings/business/5d344ba0-b049-45e2-8e12-f1b68b52898e/status
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

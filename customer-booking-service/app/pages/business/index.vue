@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Briefcase, Calendar, CheckCircle2, Clock, ChevronRight, Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
-import type { Booking } from '~/types'
+import type { Booking } from '~/models'
+
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
@@ -17,7 +18,8 @@ const loadingRowId = ref<string | null>(null)
 const expandedDeclineId = ref<string | null>(null)
 const declineReason = ref('')
 
-onMounted(() => {
+const fetchData = () => {
+  loading.value = true
   Promise.all([
     fetchMyBusiness(),
     fetchBusinessBookings({ status: 'pending', perPage: 5 }),
@@ -34,6 +36,10 @@ onMounted(() => {
     })
     .catch(() => toast.error('Failed to load dashboard'))
     .finally(() => { loading.value = false })
+}
+
+onMounted(() => {
+  fetchData();
 })
 
 async function handleConfirm(id: string) {
@@ -49,6 +55,7 @@ async function handleConfirm(id: string) {
     toast.error(err?.data?.message ?? 'Failed to confirm')
   } finally {
     loadingRowId.value = null
+    fetchData()
   }
 }
 
@@ -66,6 +73,7 @@ async function handleDecline(id: string) {
     toast.error(err?.data?.message ?? 'Failed to decline')
   } finally {
     loadingRowId.value = null
+    fetchData();
   }
 }
 </script>
@@ -167,7 +175,7 @@ async function handleDecline(id: string) {
         <div v-for="s in recentServices" :key="s.id" class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
           <div>
             <p class="font-medium">{{ s.name }}</p>
-            <p class="text-xs text-muted-foreground">{{ s.duration_minutes }} min · {{ formatCurrency(s.price) }}</p>
+            <p class="text-xs text-muted-foreground">{{ s.durationMinutes }} min · {{ formatCurrency(s.priceCents) }}</p>
           </div>
           <NuxtLink :to="`/business/services/${s.id}/availability`" class="text-xs text-primary hover:underline">
             Manage

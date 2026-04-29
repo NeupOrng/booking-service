@@ -74,12 +74,12 @@ function mapService(raw: BackendServiceSummary): Service {
 }
 
 function mapBooking(raw: BookingResponse): Booking {
-  console.log('raw booking', raw);
   return {
     id: raw.id,
     reference: raw.reference,
     status: raw.status,
     serviceId: raw.service.id,
+    service: raw.service,
     userId: raw.customer.id,
     date: raw.bookingDate,
     time: raw.bookingTime,

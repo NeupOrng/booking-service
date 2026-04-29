@@ -25,6 +25,8 @@
         --input: 210 16% 88%;
         --ring: 189 68% 38%;
         --radius: 0.625rem;
+        --active: ;
+        --disabled: ;
     }
 
     .dark {

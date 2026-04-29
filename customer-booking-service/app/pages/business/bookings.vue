@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import type { Booking, Meta } from '~/types'
+import type { Booking } from '~/models'
+import type { Meta } from '~/types'
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
@@ -12,7 +13,7 @@ const loading = ref(true)
 const loadingRowId = ref<string | null>(null)
 const expandedCancelId = ref<string | null>(null)
 
-const filterStatus = ref('')
+const filterStatus = ref('all')
 const dateFrom = ref('')
 const dateTo = ref('')
 const page = ref(1)
@@ -24,8 +25,12 @@ const pageNumbers = computed(() => Array.from({ length: meta.value.lastPage }, (
 async function load() {
   loading.value = true
   try {
+    let reqStatus = '';
+    if(filterStatus.value !== 'all') {
+      reqStatus = filterStatus.value;
+    }
     const res = await fetchBusinessBookings({
-      status: filterStatus.value || undefined,
+      status: reqStatus || undefined,
       dateFrom: dateFrom.value || undefined,
       dateTo: dateTo.value || undefined,
       page: page.value,
@@ -101,7 +106,7 @@ async function handleCancel(id: string, reason: string) {
 }
 
 const statusOptions = [
-  { label: 'All statuses', value: '' },
+  { label: 'All statuses', value: 'all' },
   { label: 'Pending', value: 'pending' },
   { label: 'Confirmed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
@@ -132,10 +137,10 @@ const statusOptions = [
     <!-- Filter bar -->
     <div class="flex flex-wrap gap-3 items-center bg-card border border-border rounded-2xl px-4 py-3">
       <Select v-model="filterStatus">
-        <SelectTrigger class="w-40 rounded-xl h-9 text-sm">
+        <SelectTrigger class="w-40 h-9 text-sm bg-background rounded-xl">
           <SelectValue placeholder="All statuses" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent class="rounded-xl bg-card border border-border shadow-lg">
           <SelectItem v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</SelectItem>
         </SelectContent>
       </Select>

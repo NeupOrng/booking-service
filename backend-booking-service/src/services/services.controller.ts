@@ -67,6 +67,8 @@ function toServiceSummary(row: any) {
     durationMinutes: service.durationMinutes,
     coverImageUrl: service.coverImageUrl,
     cancellationPolicy: service.cancellationPolicy,
+    isActive: service.isActive,
+    description: service.description,
     business: toBusinessSummary(business),
     category: toCategorySummary(category),
     nextAvailableSlot: nextAvailableSlot ?? null,
@@ -75,7 +77,7 @@ function toServiceSummary(row: any) {
 
 function toServiceDetail(row: any) {
   const { service, business, category } = row;
-  
+  Logger.log('before format', row)
   return {
     id: service.id,
     name: service.name,
@@ -189,7 +191,6 @@ export class ServicesController {
     @CurrentUser() user: { id: string; role: string },
   ) {
     const row = await this.servicesService.updateService(id, dto, user.id, user.role);
-    Logger.log("row {}", row)
     return toServiceDetail(row);
   }
 

@@ -4,7 +4,7 @@ definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
 const route = useRoute()
 const serviceId = route.params.id as string
-const { fetchMyServices, updateService } = useBusinessOwner()
+const { updateService } = useBusinessOwner()
 const { fetchService } = useBooking()
 
 const service = ref<any>(null)

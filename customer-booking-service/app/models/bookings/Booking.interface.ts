@@ -19,6 +19,13 @@ export interface Booking {
   createdAt: string
   canCancel: boolean
   canReschedule: boolean
+  service: {
+    id: string,
+    name: string,
+    coverImageUrl: string,
+    durationMinutes: number,
+    category: { slug: string }
+  }
   business: {
     id: string,
     name: string,
