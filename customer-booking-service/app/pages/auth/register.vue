@@ -45,7 +45,7 @@ const googleAuthUrl = `${config.public.apiBase}/auth/google`
         <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-6">
           <CalendarDays class="w-8 h-8 text-white" />
         </div>
-        <h2 class="text-3xl font-bold mb-3">Join ListeoBook</h2>
+        <h2 class="text-3xl font-bold mb-3 text-white">Join ListeoBook</h2>
         <p class="text-white/65 text-base leading-relaxed">
           Create your free account and start discovering and booking local wellness, beauty and fitness services.
         </p>

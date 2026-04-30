@@ -17,6 +17,14 @@ export default defineNuxtConfig({
     }
   },
   css: ['~/assets/css/tailwind.css','~/assets/css/listeo.css'],
+  components: {
+    dirs: [
+      // Register all UI components without path prefix so <DatePicker>, <Button>
+      // etc. resolve correctly even for manually-added component directories.
+      { path: '~/components/ui', pathPrefix: false },
+      '~/components',
+    ],
+  },
   modules: [
     '@nuxtjs/tailwindcss',
     'shadcn-nuxt',

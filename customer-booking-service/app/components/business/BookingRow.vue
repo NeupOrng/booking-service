@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Mail, Phone, Clock, CalendarDays } from 'lucide-vue-next'
 import type { Booking } from '~/models'
 
 const props = defineProps<{
@@ -20,103 +20,113 @@ const { formatCurrency, formatBookingDate, formatBookingTime } = useFormatters()
 const cancelReason = ref('')
 const isCancelOpen = computed(() => props.expandedCancelId === props.booking.id)
 
-const statusClass: Record<string, string> = {
-  pending:   'bg-amber-100 text-amber-800',
-  confirmed: 'bg-primary/10 text-primary',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-muted text-muted-foreground',
+const statusConfig: Record<string, { label: string; cls: string }> = {
+  pending:   { label: 'Pending',   cls: 'bg-amber-100 text-amber-800 border-amber-200' },
+  confirmed: { label: 'Confirmed', cls: 'bg-primary/10 text-primary border-primary/20' },
+  completed: { label: 'Completed', cls: 'bg-green-100 text-green-800 border-green-200' },
+  cancelled: { label: 'Cancelled', cls: 'bg-muted text-muted-foreground border-border' },
 }
 
-const initials = computed(() => {
+// ── Dummy customer info — replace with real data when backend provides it ────
+const customerInitials = computed(() => {
   const id = props.booking.userId ?? ''
   return id.slice(0, 2).toUpperCase()
 })
+const customerPhone = '+1 (555) 000-0000'
 </script>
 
 <template>
   <div>
-    <!-- Row -->
-    <div class="hidden md:grid grid-cols-[100px_80px_1fr_160px_70px_90px_100px_140px] gap-3 items-center bg-card border border-border rounded-xl px-4 py-3 text-sm">
-      <!-- Reference -->
-      <span class="font-mono text-xs text-muted-foreground truncate">{{ booking.reference }}</span>
+    <!-- Card -->
+    <div class="bg-card border border-border rounded-2xl overflow-hidden listeo-shadow">
+      <!-- Top section: customer + status + actions -->
+      <div class="px-5 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start gap-4">
 
-      <!-- Customer initials -->
-      <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-          {{ initials }}
+        <!-- Customer info -->
+        <div class="flex items-start gap-3 flex-1 min-w-0">
+          <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+            {{ customerInitials }}
+          </div>
+          <div class="min-w-0">
+            <p class="font-semibold text-sm text-foreground">{{ booking.customer.fullName }}</p>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+              <span class="flex items-center gap-1 text-xs text-muted-foreground">
+                <Mail class="w-3 h-3 shrink-0" />
+                {{ booking.customer.email }}
+              </span>
+              <span class="flex items-center gap-1 text-xs text-muted-foreground">
+                <Phone class="w-3 h-3 shrink-0" />
+                {{ customerPhone }}
+              </span>
+            </div>
+          </div>
         </div>
-        <!-- Service Id -->
-        <span class="text-xs text-muted-foreground truncate">{{ booking.serviceId.slice(0, 8)}}</span>
+
+        <!-- Status + actions -->
+        <div class="flex items-center gap-2 shrink-0">
+          <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full border capitalize', statusConfig[booking.status]?.cls ?? '']">
+            {{ statusConfig[booking.status]?.label ?? booking.status }}
+          </span>
+
+          <template v-if="isLoading">
+            <Loader2 class="w-4 h-4 animate-spin text-muted-foreground ml-1" />
+          </template>
+          <template v-else-if="booking.status === 'pending'">
+            <Button size="sm" class="h-8 px-3 text-xs" @click="emit('confirm', booking.id)">Confirm</Button>
+            <Button size="sm" variant="outline" class="h-8 px-3 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Decline</Button>
+          </template>
+          <template v-else-if="booking.status === 'confirmed'">
+            <Button size="sm" variant="outline" class="h-8 px-3 text-xs text-green-700 border-green-300" @click="emit('complete', booking.id)">Mark done</Button>
+            <Button size="sm" variant="outline" class="h-8 px-3 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Cancel</Button>
+          </template>
+        </div>
       </div>
 
-      <!-- Service Name -->
-      <span class="text-xs text-muted-foreground truncate font-mono">{{ booking.service.name  }}</span>
+      <!-- Divider -->
+      <div class="h-px bg-border mx-5" />
 
-      <!-- Date & time -->
-      <div>
-        <p class="text-xs font-medium">{{ formatBookingDate(booking.date) }}</p>
-        <p class="text-xs text-muted-foreground">{{ formatBookingTime(booking.time) }}</p>
-      </div>
+      <!-- Booking details -->
+      <div class="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+        <div>
+          <p class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+            <CalendarDays class="w-3 h-3" /> Date &amp; time
+          </p>
+          <p class="font-medium text-xs">{{ formatBookingDate(booking.date) }}</p>
+          <p class="text-muted-foreground text-xs">{{ formatBookingTime(booking.time) }}</p>
+        </div>
 
-      <!-- Duration -->
-      <span class="text-xs text-muted-foreground">{{ booking.durationMinutes }}m</span>
+        <div>
+          <p class="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+            <Clock class="w-3 h-3" /> Duration
+          </p>
+          <p class="font-medium">{{ booking.durationMinutes }} min</p>
+        </div>
 
-      <!-- Amount -->
-      <span class="text-sm font-medium">{{ formatCurrency(booking.price) }}</span>
+        <div>
+          <p class="text-xs text-muted-foreground mb-1">Service</p>
+          <p class="font-medium truncate">{{ booking.service?.name ?? booking.serviceId?.slice(0, 8) }}</p>
+          <p class="text-xs text-muted-foreground">{{ formatCurrency(booking.price) }}</p>
+        </div>
 
-      <!-- Status -->
-      <span :class="['text-xs font-semibold px-2 py-1 rounded-full capitalize text-center', statusClass[booking.status] ?? '']">
-        {{ booking.status }}
-      </span>
-
-      <!-- Actions -->
-      <div class="flex items-center gap-1.5 justify-end">
-        <template v-if="isLoading">
-          <Loader2 class="w-4 h-4 animate-spin text-muted-foreground" />
-        </template>
-        <template v-else-if="booking.status === 'pending'">
-          <Button size="sm" class="h-7 px-2 text-xs" @click="emit('confirm', booking.id)">Confirm</Button>
-          <Button size="sm" variant="outline" class="h-7 px-2 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Decline</Button>
-        </template>
-        <template v-else-if="booking.status === 'confirmed'">
-          <Button size="sm" variant="outline" class="h-7 px-2 text-xs text-green-700 border-green-300" @click="emit('complete', booking.id)">Done</Button>
-          <Button size="sm" variant="outline" class="h-7 px-2 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Cancel</Button>
-        </template>
+        <div>
+          <p class="text-xs text-muted-foreground mb-1">Reference</p>
+          <p class="font-mono text-xs font-semibold text-foreground">{{ booking.reference }}</p>
+          <p class="text-xs text-muted-foreground mt-0.5">ID: {{ booking.userId?.slice(0, 8) }}</p>
+        </div>
       </div>
     </div>
 
-    <!-- Mobile card -->
-    <div class="md:hidden bg-card border border-border rounded-xl p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <span class="font-mono text-xs text-muted-foreground">{{ booking.reference }}</span>
-        <span :class="['text-xs font-semibold px-2 py-1 rounded-full capitalize', statusClass[booking.status] ?? '']">
-          {{ booking.status }}
-        </span>
+    <!-- Inline cancel panel -->
+    <div
+      v-if="isCancelOpen"
+      class="mt-1 border border-destructive/20 bg-destructive/5 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+    >
+      <div class="flex-1">
+        <p class="text-sm font-medium text-destructive mb-2">Cancel this booking?</p>
+        <Input v-model="cancelReason" placeholder="Reason for cancellation (optional)" class="text-sm h-9" />
       </div>
-      <div class="grid grid-cols-2 gap-2 text-sm">
-        <div><p class="text-xs text-muted-foreground">Date</p><p class="font-medium text-xs">{{ formatBookingDate(booking.date) }}</p></div>
-        <div><p class="text-xs text-muted-foreground">Time</p><p class="font-medium">{{ formatBookingTime(booking.time) }}</p></div>
-        <div><p class="text-xs text-muted-foreground">Duration</p><p class="font-medium">{{ booking.durationMinutes }} min</p></div>
-        <div><p class="text-xs text-muted-foreground">Amount</p><p class="font-medium">{{ formatCurrency(booking.price) }}</p></div>
-      </div>
-      <div class="flex gap-2 pt-1" v-if="!isLoading">
-        <template v-if="booking.status === 'pending'">
-          <Button size="sm" class="flex-1 h-8 text-xs" @click="emit('confirm', booking.id)">Confirm</Button>
-          <Button size="sm" variant="outline" class="flex-1 h-8 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Decline</Button>
-        </template>
-        <template v-else-if="booking.status === 'confirmed'">
-          <Button size="sm" variant="outline" class="flex-1 h-8 text-xs text-green-700 border-green-300" @click="emit('complete', booking.id)">Mark done</Button>
-          <Button size="sm" variant="outline" class="flex-1 h-8 text-xs text-destructive border-destructive" @click="emit('toggleCancel', booking.id)">Cancel</Button>
-        </template>
-      </div>
-      <div v-else class="flex justify-center py-1"><Loader2 class="w-4 h-4 animate-spin text-muted-foreground" /></div>
-    </div>
-
-    <!-- Inline cancel input -->
-    <div v-if="isCancelOpen" class="mt-1 border border-destructive/20 bg-destructive/5 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-      <Input v-model="cancelReason" placeholder="Reason (optional)" class="flex-1 h-9 text-sm" />
       <div class="flex gap-2 shrink-0">
-        <Button variant="ghost" size="sm" @click="emit('toggleCancel', '')">Back</Button>
+        <Button variant="ghost" size="sm" @click="emit('toggleCancel', '')">Keep</Button>
         <Button variant="destructive" size="sm" @click="emit('cancel', booking.id, cancelReason)">
           Confirm cancellation
         </Button>

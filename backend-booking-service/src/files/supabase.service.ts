@@ -1,17 +1,15 @@
-import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
-export class SupabaseStorageService implements OnModuleInit {
-  private client: SupabaseClient;
-  private defaultPresignExpiry: number;
+export class SupabaseStorageService {
+  private readonly client: SupabaseClient;
+  private readonly defaultPresignExpiry: number;
 
-  constructor(private readonly configService: ConfigService) {}
-
-  onModuleInit() {
-    const url    = this.configService.get<string>('storage.url');
-    const key    = this.configService.get<string>('storage.serviceRoleKey');
+  constructor(private readonly configService: ConfigService) {
+    const url = this.configService.get<string>('storage.url');
+    const key = this.configService.get<string>('storage.serviceRoleKey');
     this.defaultPresignExpiry = this.configService.get<number>('storage.presignExpirySeconds') ?? 3600;
 
     this.client = createClient(url, key, {
