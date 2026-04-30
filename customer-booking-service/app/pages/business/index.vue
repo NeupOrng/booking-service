@@ -126,7 +126,7 @@ async function handleDecline(id: string) {
       </p>
       <div v-else class="space-y-2">
         <div v-for="b in pendingBookings" :key="b.id">
-          <div class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
+          <!-- <div class="flex items-center justify-between px-4 py-3 rounded-xl border border-border text-sm">
             <div>
               <p class="font-medium font-mono text-xs">{{ b.reference }}</p>
               <p class="text-xs text-muted-foreground mt-0.5">
@@ -144,7 +144,16 @@ async function handleDecline(id: string) {
                 </Button>
               </template>
             </div>
-          </div>
+          </div> -->
+          <BusinessBookingRow
+                :booking="b"
+                :isLoading="loadingRowId === b.id"
+                :expandedCancelId="`N/A`"
+                @confirm="handleConfirm"
+                @complete="null"
+                @cancel="null"
+                @toggleCancel="null"
+            />
           <div v-if="expandedDeclineId === b.id" class="mt-1 border border-destructive/20 bg-destructive/5 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
             <Input v-model="declineReason" placeholder="Reason (optional)" class="flex-1 h-9 text-sm" />
             <div class="flex gap-2 shrink-0">

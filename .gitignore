@@ -1,5 +1,4 @@
 # compiled output
-/backend-booking-service/dist
 /backend-booking-service/node_modules
 /customer-booking-service/node_modules
 
