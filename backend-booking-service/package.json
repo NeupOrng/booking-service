@@ -41,6 +41,7 @@
     "class-validator": "^0.15.1",
     "connect-redis": "^9.0.0",
     "drizzle-orm": "^0.45.2",
+    "express": "^4.22.1",
     "express-session": "^1.19.0",
     "ioredis": "^5.10.1",
     "multer": "^2.1.1",
