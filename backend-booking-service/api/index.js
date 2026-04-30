@@ -22,14 +22,14 @@ async function bootstrap() {
   const { ValidationPipe, ClassSerializerInterceptor } = require('@nestjs/common');
   const session = require('express-session');
   const { RedisStore } = require('connect-redis');
-  const Redis = require('ioredis');
+  const { default: Redis } = require('ioredis');
 
   const { AppModule } = require('../dist/src/app.module');
   const { AllExceptionsFilter } = require('../dist/src/common/filters/all-exceptions.filter');
 
   // Redis-backed session store — required for Google OAuth state to survive
   // across serverless invocations (in-memory store would lose state between calls)
-  const redisClient = new Redis.default(process.env.REDIS_URL);
+  const redisClient = new Redis(process.env.REDIS_URL);
   const sessionStore = new RedisStore({ client: redisClient });
 
   const app = await NestFactory.create(
