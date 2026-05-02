@@ -21,7 +21,7 @@ async function bootstrap() {
   const { ExpressAdapter } = require('@nestjs/platform-express');
   const { ValidationPipe, ClassSerializerInterceptor } = require('@nestjs/common');
   const session = require('express-session');
-  const { RedisStore } = require('connect-redis');
+  const RedisStore = require('connect-redis').default;
   const { default: Redis } = require('ioredis');
 
   const { AppModule } = require('../dist/src/app.module');
