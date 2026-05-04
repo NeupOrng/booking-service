@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ListeoBook — UI Kit</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="Atoms.jsx"></script>
+  <script type="text/babel" src="Chrome.jsx"></script>
+  <script type="text/babel" src="BookingComponents.jsx"></script>
+  <script type="text/babel" src="Pages.jsx"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const App = () => {
+      const [user, setUser] = useState(null);
+      const [route, setRoute] = useState({ name: 'services' });
+
+      useEffect(() => {
+        if (window.lucide) lucide.createIcons();
+      });
+
+      const nav = (path) => {
+        if (path === '/services') setRoute({ name: 'services' });
+        else if (path === '/account/bookings') {
+          if (!user) setRoute({ name: 'auth', from: '/account/bookings' });
+          else setRoute({ name: 'account' });
+        }
+      };
+
+      let scene;
+      if (route.name === 'auth') {
+        scene = <SignInPage onSignIn={(u) => { setUser(u); setRoute({ name: route.from === '/account/bookings' ? 'account' : 'services' }); }} />;
+        return scene; // full-bleed (no nav/footer)
+      }
+      if (route.name === 'services') scene = <ServicesPage onOpenService={(id) => setRoute({ name: 'detail', id })} />;
+      else if (route.name === 'detail') scene = <ServiceDetailPage serviceId={route.id} onBack={() => setRoute({ name: 'services' })} onBook={(id, date, time) => {
+        if (!user) setRoute({ name: 'auth', from: '/book', bookCtx: { id, date, time } });
+        else setRoute({ name: 'book', id, date, time });
+      }} />;
+      else if (route.name === 'book') scene = <BookWizard serviceId={route.id} date={route.date} time={route.time} onBack={() => setRoute({ name: 'services' })} onConfirm={() => setRoute({ name: 'account' })} />;
+      else if (route.name === 'account') scene = <AccountBookings onBook={() => setRoute({ name: 'services' })} />;
+
+      return (
+        <div className="lb-app">
+          <Navbar user={user} onSignIn={() => setRoute({ name: 'auth' })} onSignOut={() => setUser(null)} currentPath={route.name === 'account' ? '/account/bookings' : '/services'} onNav={nav} />
+          <main className="lb-main">{scene}</main>
+          <Footer />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

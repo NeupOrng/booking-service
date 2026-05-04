@@ -80,13 +80,13 @@ export declare class AuthController {
             updatedAt: Date;
         };
         business: {
+            description: string;
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
-            slug: string;
-            description: string;
             ownerId: string;
+            slug: string;
             address: string;
             logoUrl: string;
             phone: string;

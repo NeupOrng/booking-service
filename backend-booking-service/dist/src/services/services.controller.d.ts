@@ -180,10 +180,10 @@ export declare class ServicesController {
         id: string;
         createdAt: Date;
         serviceId: string;
+        reason: string;
         startTime: string;
         endTime: string;
         blockDate: string;
-        reason: string;
     }[]>;
     createBlock(id: string, dto: CreateAvailabilityBlockDto, user: {
         id: string;
@@ -192,10 +192,10 @@ export declare class ServicesController {
         id: string;
         createdAt: Date;
         serviceId: string;
+        reason: string;
         startTime: string;
         endTime: string;
         blockDate: string;
-        reason: string;
     }>;
     updateBlock(id: string, blockId: string, dto: UpdateAvailabilityBlockDto, user: {
         id: string;
@@ -204,10 +204,10 @@ export declare class ServicesController {
         id: string;
         createdAt: Date;
         serviceId: string;
+        reason: string;
         startTime: string;
         endTime: string;
         blockDate: string;
-        reason: string;
     }>;
     deleteBlock(id: string, blockId: string, user: {
         id: string;

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ListeoBook — UI Kit (Print)</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @page { size: A3 landscape; margin: 1cm; }
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .nav { position: static !important; }
+      .print-page { break-after: page; break-inside: avoid; }
+      .print-page:last-child { break-after: auto; }
+      body { background: #fff !important; }
+      .print-section-title {
+        font: 700 22px/1.2 Inter; color: #1a2038; margin: 0 0 12px;
+        letter-spacing: -0.01em;
+        padding-bottom: 8px; border-bottom: 2px solid #1fa8be;
+      }
+      .print-section-sub { font: 500 13px/1.4 'JetBrains Mono', monospace; color: #6b7280; margin: -8px 0 16px; }
+      .footer { position: relative; }
+    }
+    body { background: #fff; }
+    .print-page { padding: 16px 0 32px; page-break-after: always; }
+    .print-page:last-child { page-break-after: auto; }
+    .print-section-title {
+      font: 700 22px/1.2 Inter; color: #1a2038; margin: 0 0 4px;
+      letter-spacing: -0.01em; padding-bottom: 8px; border-bottom: 2px solid #1fa8be;
+    }
+    .print-section-sub { font: 500 13px/1.4 'JetBrains Mono', monospace; color: #6b7280; margin: 4px 0 16px; }
+    /* prevent stickiness in print */
+    .nav, [style*="sticky"] { position: relative !important; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="Atoms.jsx"></script>
+  <script type="text/babel" src="Chrome.jsx"></script>
+  <script type="text/babel" src="BookingComponents.jsx"></script>
+  <script type="text/babel" src="Pages.jsx"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const PrintApp = () => {
+      useEffect(() => {
+        if (window.lucide) lucide.createIcons();
+        const t = setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 300);
+        return () => clearTimeout(t);
+      });
+
+      const demoUser = { fullName: 'Alex Morgan', email: 'alex@example.com' };
+      const noop = () => {};
+
+      const sections = [
+        {
+          title: '01 · Services Listing',
+          sub: '/services — hero search + category pills + grid',
+          render: () => (
+            <div className="lb-app">
+              <Navbar user={null} currentPath="/services" onNav={noop} onSignIn={noop} />
+              <main className="lb-main"><ServicesPage onOpenService={noop} /></main>
+            </div>
+          ),
+        },
+        {
+          title: '02 · Service Detail',
+          sub: '/services/:id — cover, about, reviews, sticky booking panel',
+          render: () => (
+            <div className="lb-app">
+              <Navbar user={null} currentPath="/services" onNav={noop} onSignIn={noop} />
+              <main className="lb-main"><ServiceDetailPage serviceId="s1" onBack={noop} onBook={noop} /></main>
+            </div>
+          ),
+        },
+        {
+          title: '03 · Booking Wizard',
+          sub: '/book — step 2 (review & confirm)',
+          render: () => (
+            <div className="lb-app">
+              <Navbar user={demoUser} currentPath="/services" onNav={noop} onSignOut={noop} />
+              <main className="lb-main"><BookWizard serviceId="s1" date="2026-05-04" time="14:00" onBack={noop} onConfirm={noop} /></main>
+            </div>
+          ),
+        },
+        {
+          title: '04 · My Bookings',
+          sub: '/account/bookings — stats + tabs + booking cards',
+          render: () => (
+            <div className="lb-app">
+              <Navbar user={demoUser} currentPath="/account/bookings" onNav={noop} onSignOut={noop} />
+              <main className="lb-main"><AccountBookings onBook={noop} /></main>
+            </div>
+          ),
+        },
+        {
+          title: '05 · Sign In',
+          sub: '/auth/login — split panel with gradient',
+          render: () => <SignInPage onSignIn={noop} />,
+        },
+      ];
+
+      return (
+        <div>
+          {sections.map((s, i) => (
+            <section key={i} className="print-page">
+              <div style={{ padding: '0 24px' }}>
+                <h2 className="print-section-title">{s.title}</h2>
+                <div className="print-section-sub">{s.sub}</div>
+              </div>
+              <div style={{ border: '1px solid #dde2e8', borderRadius: 16, overflow: 'hidden', margin: '0 24px' }}>
+                {s.render()}
+              </div>
+            </section>
+          ))}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<PrintApp />);
+
+    (async () => {
+      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
+      // wait for Babel transpiled scripts + React render + Lucide icons
+      await new Promise(r => setTimeout(r, 1500));
+      if (window.lucide) lucide.createIcons();
+      await new Promise(r => setTimeout(r, 500));
+      window.print();
+    })();
+  </script>
+</body>
+</html>

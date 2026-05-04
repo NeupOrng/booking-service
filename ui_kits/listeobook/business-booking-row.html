@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BusinessBookingRow — ListeoBook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../listeobook/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { background: #f5f7fa; padding: 32px 24px; }
+  .page { max-width: 920px; margin: 0 auto; }
+  .page > h1 { font: 700 24px/1.2 Inter; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .page > p.sub { color: #6b7280; margin: 0 0 24px; font-size: 14px; }
+  .stack { display:flex; flex-direction:column; gap: 18px; }
+  .row-label { font: 600 11px/1 Inter; letter-spacing: .06em; text-transform: uppercase; color:#6b7280; margin: 24px 0 8px; }
+
+  .bbr { background:#fff; border:1px solid #dde2e8; border-radius: 16px; overflow:hidden; box-shadow: 0 2px 20px rgba(0,0,0,.07); }
+
+  /* TOP: customer identity + status pill (no buttons here) */
+  .bbr-top { display:flex; gap: 16px; align-items:flex-start; padding: 18px 20px 14px; }
+  .bbr-cust { display:flex; gap: 12px; flex: 1; min-width: 0; }
+  .bbr-avatar { width: 40px; height: 40px; border-radius: 9999px; background: rgba(31,168,190,.10); color:#1fa8be; font:700 13px/1 Inter; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .bbr-name { font: 600 14px/1.2 Inter; color:#1a2038; }
+  .bbr-contacts { display:flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+  .bbr-contact { display:inline-flex; align-items:center; gap: 5px; font: 400 12px/1.2 Inter; color:#6b7280; }
+  .bbr-contact i { width: 12px; height: 12px; }
+
+  .bbr-status-wrap { flex-shrink: 0; display:flex; align-items:center; }
+  .bbr-status {
+    display:inline-flex; align-items:center; gap: 6px;
+    font: 600 11px/1 Inter; padding: 6px 10px; border-radius: 9999px;
+    border: 1px solid; text-transform: capitalize; letter-spacing: .02em;
+  }
+  .bbr-status .dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; }
+  .s-pending   { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+  .s-confirmed { background: rgba(31,168,190,.10); color:#1fa8be; border-color: rgba(31,168,190,.20); }
+  .s-completed { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .s-cancelled { background:#eef1f5; color:#6b7280; border-color:#dde2e8; }
+
+  /* MIDDLE: booking detail grid */
+  .bbr-divider { height: 1px; background:#dde2e8; margin: 0 20px; }
+  .bbr-grid { padding: 14px 20px 16px; display:grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .bbr-cell .lbl { font: 500 11px/1 Inter; color:#6b7280; display:flex; align-items:center; gap: 5px; margin-bottom: 6px; }
+  .bbr-cell .lbl i { width: 12px; height: 12px; }
+  .bbr-cell .v1 { font: 500 13px/1.3 Inter; color:#1a2038; }
+  .bbr-cell .v2 { font: 400 12px/1.3 Inter; color:#6b7280; margin-top: 2px; }
+  .bbr-cell .mono { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px; letter-spacing: .04em; color:#1a2038; }
+  .bbr-cell .mono-light { font-family: 'JetBrains Mono', monospace; font-size: 11px; color:#6b7280; margin-top: 2px; letter-spacing: .04em; }
+  .truncate { white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+  /* BOTTOM: dedicated action footer (separated from status) */
+  .bbr-footer {
+    display:flex; align-items:center; justify-content: space-between; gap: 12px;
+    padding: 12px 20px; background:#fafbfc; border-top: 1px solid #dde2e8;
+    flex-wrap: wrap;
+  }
+  .bbr-footer-meta { display:inline-flex; align-items:center; gap: 6px; font: 400 12px/1 Inter; color:#6b7280; }
+  .bbr-footer-meta i { width: 12px; height: 12px; }
+  .bbr-footer-actions { display:flex; align-items:center; gap: 8px; flex-wrap: wrap; }
+  .bbr-footer-empty { font: 400 12px/1 Inter; color:#9aa3af; font-style: italic; }
+
+  .bbr-btn { height: 32px; padding: 0 14px; border-radius: 6px; font: 500 12px/1 Inter; border: 1px solid transparent; cursor: pointer; display:inline-flex; align-items:center; gap: 6px; }
+  .bbr-btn.primary { background:#1fa8be; color:#fff; }
+  .bbr-btn.primary:hover { background:#1b94a8; }
+  .bbr-btn.danger-out { background:#fff; color:#ef4444; border-color:#ef4444; }
+  .bbr-btn.danger-out:hover { background: rgba(239,68,68,.05); }
+  .bbr-btn.success-out { background:#fff; color:#15803d; border-color:#86efac; }
+  .bbr-btn.success-out:hover { background: rgba(34,197,94,.06); }
+  .bbr-btn.ghost { background: transparent; color:#1a2038; border-color: #dde2e8; }
+  .bbr-btn.ghost:hover { background:#eef1f5; }
+
+  /* inline cancel */
+  .bbr-cancel {
+    margin-top: 4px; border:1px solid rgba(239,68,68,.20);
+    background: rgba(239,68,68,.05); border-radius: 16px;
+    padding: 14px 20px; display:flex; gap: 12px; align-items:center; flex-wrap: wrap;
+  }
+  .bbr-cancel-body { flex: 1; min-width: 220px; }
+  .bbr-cancel-title { font: 500 13px/1 Inter; color:#ef4444; margin-bottom: 8px; }
+  .bbr-cancel input {
+    width: 100%; height: 36px; border:1px solid #dde2e8; border-radius: 6px;
+    padding: 0 10px; font: 400 13px/1 Inter;
+  }
+  .bbr-cancel input:focus { outline: none; border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.18); }
+  .bbr-cancel-actions { display:flex; gap: 8px; flex-shrink: 0; }
+  .bbr-btn.destructive { background:#ef4444; color:#fff; border-color:#ef4444; }
+  .bbr-btn.destructive:hover { background:#d93838; }
+
+  .spinner { animation: sp 1s linear infinite; color:#6b7280; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .bbr-grid { grid-template-columns: repeat(2, 1fr); }
+    .bbr-footer { flex-direction: column; align-items: stretch; }
+    .bbr-footer-actions { justify-content: flex-end; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+  const { useState } = React;
+
+  const Icon = ({ name, size=14, style }) => (
+    <i data-lucide={name} style={{ width:size, height:size, display:'inline-flex', ...style }}></i>
+  );
+
+  const STATUS = {
+    pending:   { label:'Pending',   cls:'s-pending' },
+    confirmed: { label:'Confirmed', cls:'s-confirmed' },
+    completed: { label:'Completed', cls:'s-completed' },
+    cancelled: { label:'Cancelled', cls:'s-cancelled' },
+  };
+
+  const formatCurrency = (cents) => '$' + (cents/100).toFixed(2);
+
+  const BusinessBookingRow = ({ booking, isLoading, expandedCancelId, onConfirm, onComplete, onCancel, onToggleCancel }) => {
+    const [reason, setReason] = useState('');
+    const isCancelOpen = expandedCancelId === booking.id;
+    const initials = (booking.userId || '').slice(0,2).toUpperCase();
+    const status = STATUS[booking.status] || { label: booking.status, cls: '' };
+
+    const renderActions = () => {
+      if (isLoading) {
+        return (
+          <span className="bbr-footer-meta">
+            <Icon name="loader-2" size={12} style={{ animation: 'sp 1s linear infinite' }} />
+            Updating…
+          </span>
+        );
+      }
+      if (booking.status === 'pending') {
+        return (
+          <>
+            <button className="bbr-btn danger-out" onClick={() => onToggleCancel?.(booking.id)}>Decline</button>
+            <button className="bbr-btn primary" onClick={() => onConfirm?.(booking.id)}>
+              <Icon name="check" size={12} /> Confirm booking
+            </button>
+          </>
+        );
+      }
+      if (booking.status === 'confirmed') {
+        return (
+          <>
+            <button className="bbr-btn danger-out" onClick={() => onToggleCancel?.(booking.id)}>Cancel</button>
+            <button className="bbr-btn success-out" onClick={() => onComplete?.(booking.id)}>
+              <Icon name="check-check" size={12} /> Mark complete
+            </button>
+          </>
+        );
+      }
+      if (booking.status === 'completed') {
+        return <span className="bbr-footer-empty">No actions — booking complete</span>;
+      }
+      if (booking.status === 'cancelled') {
+        return <span className="bbr-footer-empty">No actions — booking cancelled</span>;
+      }
+      return null;
+    };
+
+    return (
+      <div>
+        <div className="bbr">
+          {/* TOP — customer + status only */}
+          <div className="bbr-top">
+            <div className="bbr-cust">
+              <div className="bbr-avatar">{initials}</div>
+              <div style={{ minWidth: 0 }}>
+                <div className="bbr-name">{booking.customer.fullName}</div>
+                <div className="bbr-contacts">
+                  <span className="bbr-contact"><Icon name="mail" size={12} /> {booking.customer.email}</span>
+                  <span className="bbr-contact"><Icon name="phone" size={12} /> {booking.customerPhone || '+1 (555) 000-0000'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bbr-status-wrap">
+              <span className={`bbr-status ${status.cls}`}>
+                <span className="dot"></span>
+                {status.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="bbr-divider"></div>
+
+          {/* MIDDLE — booking detail grid */}
+          <div className="bbr-grid">
+            <div className="bbr-cell">
+              <div className="lbl"><Icon name="calendar-days" size={12} /> Date &amp; time</div>
+              <div className="v1">{booking.dateLabel}</div>
+              <div className="v2">{booking.timeLabel}</div>
+            </div>
+            <div className="bbr-cell">
+              <div className="lbl"><Icon name="clock" size={12} /> Duration</div>
+              <div className="v1">{booking.durationMinutes} min</div>
+            </div>
+            <div className="bbr-cell">
+              <div className="lbl">Service</div>
+              <div className="v1 truncate">{booking.service?.name}</div>
+              <div className="v2">{formatCurrency(booking.price)}</div>
+            </div>
+            <div className="bbr-cell">
+              <div className="lbl">Reference</div>
+              <div className="mono">{booking.reference}</div>
+              <div className="mono-light">ID: {(booking.userId || '').slice(0,8)}</div>
+            </div>
+          </div>
+
+          {/* BOTTOM — dedicated action footer (clearly separated from status) */}
+          <div className="bbr-footer">
+            <span className="bbr-footer-meta">
+              <Icon name="message-square" size={12} />
+              Booked {booking.bookedAgo || '2 days ago'}
+            </span>
+            <div className="bbr-footer-actions">
+              {renderActions()}
+            </div>
+          </div>
+        </div>
+
+        {isCancelOpen && (
+          <div className="bbr-cancel">
+            <div className="bbr-cancel-body">
+              <div className="bbr-cancel-title">Cancel this booking?</div>
+              <input
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="Reason for cancellation (optional)"
+              />
+            </div>
+            <div className="bbr-cancel-actions">
+              <button className="bbr-btn ghost" onClick={() => onToggleCancel?.('')}>Keep</button>
+              <button className="bbr-btn destructive" onClick={() => onCancel?.(booking.id, reason)}>Confirm cancellation</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Demo
+  const demo = [
+    {
+      id:'1', status:'pending', userId:'u_alex_morgan', reference:'BK-7Y3X92',
+      customer:{ fullName:'Alex Morgan', email:'alex.morgan@example.com' },
+      customerPhone:'+1 (415) 555-2841',
+      service:{ name:'Deep Tissue Massage' }, durationMinutes:60, price:8500,
+      dateLabel:'Mon, May 4, 2026', timeLabel:'2:00 PM', bookedAgo:'12 minutes ago',
+    },
+    {
+      id:'2', status:'confirmed', userId:'u_priya_raman', reference:'BK-A1F4QQ',
+      customer:{ fullName:'Priya Raman', email:'priya.r@example.com' },
+      customerPhone:'+1 (628) 555-0177',
+      service:{ name:'Personal Training Session' }, durationMinutes:60, price:7000,
+      dateLabel:'Wed, May 6, 2026', timeLabel:'6:30 PM', bookedAgo:'yesterday',
+    },
+    {
+      id:'3', status:'completed', userId:'u_daniel_kim', reference:'BK-Z9P0LM',
+      customer:{ fullName:'Daniel Kim', email:'d.kim@example.com' },
+      customerPhone:'+1 (917) 555-0103',
+      service:{ name:'Yoga — Vinyasa Flow' }, durationMinutes:60, price:2500,
+      dateLabel:'Apr 22, 2026', timeLabel:'5:30 PM', bookedAgo:'2 weeks ago',
+    },
+    {
+      id:'4', status:'cancelled', userId:'u_sarah_mitchell', reference:'BK-44JJZ2',
+      customer:{ fullName:'Sarah Mitchell', email:'sarah.m@example.com' },
+      customerPhone:'+1 (212) 555-0166',
+      service:{ name:'Hot Stone Therapy' }, durationMinutes:90, price:11000,
+      dateLabel:'Apr 19, 2026', timeLabel:'3:00 PM', bookedAgo:'3 weeks ago',
+    },
+  ];
+
+  const App = () => {
+    const [bookings, setBookings] = useState(demo);
+    const [expandedCancelId, setExpandedCancelId] = useState(null);
+    const [loadingId, setLoadingId] = useState(null);
+
+    const update = (id, patch) => setBookings(bs => bs.map(b => b.id === id ? { ...b, ...patch } : b));
+
+    const onConfirm = (id) => { setLoadingId(id); setTimeout(() => { update(id, { status:'confirmed' }); setLoadingId(null); }, 600); };
+    const onComplete = (id) => { setLoadingId(id); setTimeout(() => { update(id, { status:'completed' }); setLoadingId(null); }, 600); };
+    const onToggleCancel = (id) => setExpandedCancelId(prev => prev === id ? null : id);
+    const onCancel = (id, reason) => { update(id, { status:'cancelled' }); setExpandedCancelId(null); console.log('cancel', id, reason); };
+
+    React.useEffect(() => {
+      if (window.lucide) lucide.createIcons();
+    });
+
+    return (
+      <div className="page">
+        <h1>BusinessBookingRow</h1>
+        <p className="sub">Merchant-side row for the business inbox. Status sits top-right with the customer; actions live in their own footer bar so they're never confused with the state indicator.</p>
+
+        <div className="row-label">All states</div>
+        <div className="stack">
+          {bookings.map(b => (
+            <BusinessBookingRow
+              key={b.id}
+              booking={b}
+              isLoading={loadingId === b.id}
+              expandedCancelId={expandedCancelId}
+              onConfirm={onConfirm}
+              onComplete={onComplete}
+              onCancel={onCancel}
+              onToggleCancel={onToggleCancel}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
