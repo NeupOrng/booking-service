@@ -1,0 +1,24 @@
+info:
+  name: upload
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base-api-url}}/files/upload"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - /Users/themacstore/Downloads/golden_spa_logo.svg
+  auth:
+    type: bearer
+    token: "{{business-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

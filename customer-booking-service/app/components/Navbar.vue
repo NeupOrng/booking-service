@@ -32,18 +32,26 @@ const mobileOpen = ref(false)
       <div class="hidden md:flex items-center gap-3">
         <template v-if="isAuthenticated">
           <NuxtLink
-            to="/account/bookings"
+            :to="user?.role === 'business_owner' ? '/business' : '/account/bookings'"
             class="text-sm font-medium text-white/70 hover:text-white transition-colors"
           >
-            My Bookings
+            {{ user?.role === 'business_owner' ? 'Dashboard' : 'My Bookings' }}
           </NuxtLink>
           <div class="flex items-center gap-3 pl-3 border-l border-white/20">
-            <div class="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
-              <span class="text-xs font-bold text-white">
-                {{ user?.fullName?.charAt(0)?.toUpperCase() }}
-              </span>
-            </div>
-            <span class="text-sm font-medium text-white">{{ user?.fullName }}</span>
+            <NuxtLink :to="user?.role === 'business_owner' ? '/business/account' : '/account/profile'" class="flex items-center gap-2 group">
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-primary/30 flex items-center justify-center shrink-0">
+                <img
+                  v-if="user?.avatarUrl"
+                  :src="user.avatarUrl"
+                  class="w-full h-full object-cover"
+                  :alt="user.fullName"
+                />
+                <span v-else class="text-xs font-bold text-white">
+                  {{ user?.fullName?.charAt(0)?.toUpperCase() }}
+                </span>
+              </div>
+              <span class="text-sm font-medium text-white group-hover:text-primary transition-colors">{{ user?.fullName }}</span>
+            </NuxtLink>
             <button
               @click="logout"
               class="text-xs px-3 py-1.5 rounded-md border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors"
@@ -79,10 +87,21 @@ const mobileOpen = ref(false)
         Browse Services
       </NuxtLink>
       <template v-if="isAuthenticated">
-        <NuxtLink to="/account/bookings" class="text-sm font-medium text-white/80 hover:text-white py-1" @click="mobileOpen = false">
-          My Bookings
+        <NuxtLink
+          :to="user?.role === 'business_owner' ? '/business' : '/account/bookings'"
+          class="text-sm font-medium text-white/80 hover:text-white py-1"
+          @click="mobileOpen = false"
+        >
+          {{ user?.role === 'business_owner' ? 'Dashboard' : 'My Bookings' }}
         </NuxtLink>
-        <button @click="logout; mobileOpen = false" class="text-sm text-left text-white/60 hover:text-white py-1">
+        <NuxtLink
+          :to="user?.role === 'business_owner' ? '/business/account' : '/account/profile'"
+          class="text-sm font-medium text-white/80 hover:text-white py-1"
+          @click="mobileOpen = false"
+        >
+          My Profile
+        </NuxtLink>
+        <button @click="logout(); mobileOpen = false" class="text-sm text-left text-white/60 hover:text-white py-1">
           Logout ({{ user?.fullName }})
         </button>
       </template>

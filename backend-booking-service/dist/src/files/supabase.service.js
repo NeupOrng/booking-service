@@ -19,7 +19,8 @@ let SupabaseStorageService = class SupabaseStorageService {
         this.configService = configService;
         const url = this.configService.get('storage.url');
         const key = this.configService.get('storage.serviceRoleKey');
-        this.defaultPresignExpiry = (_a = this.configService.get('storage.presignExpirySeconds')) !== null && _a !== void 0 ? _a : 3600;
+        this.defaultPresignExpiry =
+            (_a = this.configService.get('storage.presignExpirySeconds')) !== null && _a !== void 0 ? _a : 3600;
         this.client = (0, supabase_js_1.createClient)(url, key, {
             auth: { persistSession: false, autoRefreshToken: false },
         });
@@ -42,7 +43,9 @@ let SupabaseStorageService = class SupabaseStorageService {
         return data.signedUrl;
     }
     async delete(bucket, objectKey) {
-        const { error } = await this.client.storage.from(bucket).remove([objectKey]);
+        const { error } = await this.client.storage
+            .from(bucket)
+            .remove([objectKey]);
         if (error)
             throw new common_1.InternalServerErrorException(`Delete failed: ${error.message}`);
     }

@@ -62,7 +62,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], FilesController.prototype, "upload", null);
 __decorate([
-    (0, swagger_1.ApiOperation)({ summary: 'Get a presigned download URL for a file (1-hour expiry)' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get a presigned download URL for a file (1-hour expiry)',
+    }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'File UUID' }),
     (0, swagger_1.ApiResponse)({ status: 200, schema: { example: { url: 'https://...' } } }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'File not found' }),
@@ -75,7 +77,10 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Delete a file from storage and database' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'File UUID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, schema: { example: { message: 'File deleted' } } }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        schema: { example: { message: 'File deleted' } },
+    }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'File not found' }),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),

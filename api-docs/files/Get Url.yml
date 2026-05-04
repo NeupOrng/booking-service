@@ -1,0 +1,17 @@
+info:
+  name: Get Url
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{base-api-url}}/files//url"
+  auth:
+    type: bearer
+    token: "{{business-access-token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
