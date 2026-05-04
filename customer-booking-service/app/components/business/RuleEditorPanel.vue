@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Loader2, Trash2 } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 import type { AvailabilityRule } from '~/types'
 
 const props = defineProps<{
@@ -14,7 +15,6 @@ const emit = defineEmits<{
 }>()
 
 const { createRule, updateRule, deleteRule } = useBusinessOwner()
-const { toast } = await import('vue-sonner')
 
 const form = reactive({
   startTime: props.rule?.startTime ?? '09:00',
@@ -62,6 +62,7 @@ async function save() {
         endTime: form.endTime,
         slotDurationMinutes: form.slotDurationMinutes,
         capacity: form.capacity,
+        isActive: true,
       })
     }
     toast.success('Rule saved')

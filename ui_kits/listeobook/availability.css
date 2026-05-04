@@ -1,0 +1,112 @@
+/* AvailabilityHours — V1 "Shop hours" generalized for the ListeoBook UI kit.
+   A merchant-facing weekly schedule editor: refined day columns + sticky preview.
+
+   Tokens: relies on var(--primary), var(--fg), var(--fg-muted), var(--border),
+   var(--card), var(--muted), var(--bg) defined in styles.css.
+   ====================================================================== */
+
+/* page chrome (inherited pattern from rest of kit) */
+.ah-page { padding: 28px 32px; background: var(--bg); }
+.ah-svc-chip {
+  display:inline-flex; align-items:center; gap: 8px;
+  font-size: 12px; color: var(--fg-muted);
+  background: rgba(31,168,190,.08);
+  border: 1px solid rgba(31,168,190,.18);
+  padding: 5px 10px; border-radius: 9999px; margin-bottom: 8px;
+}
+.ah-svc-chip b { color: var(--fg); font-weight: 600; }
+.ah-back { font-size: 12px; color: var(--fg-muted); display:inline-flex; align-items:center; gap:4px; }
+.ah-back:hover { color: var(--primary); }
+.ah-head { display:flex; align-items:flex-end; justify-content:space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
+.ah-title { font: 700 26px/1.1 var(--font-sans); letter-spacing: -.02em; margin: 6px 0 4px; color: var(--fg); }
+.ah-sub { font-size: 13px; color: var(--fg-muted); margin: 0; max-width: 560px; }
+.ah-pill-btn {
+  font: 500 12px/1 var(--font-sans);
+  padding: 7px 12px; border-radius: 8px;
+  background: #fff; border: 1px solid var(--border);
+  color: var(--fg); display:inline-flex; align-items:center; gap: 5px; cursor:pointer;
+  transition: background .15s, border-color .15s;
+}
+.ah-pill-btn:hover { background: var(--accent); border-color: rgba(31,168,190,.30); }
+.ah-divider { display:flex; align-items:center; gap: 12px; margin: 28px 0 14px; color: var(--fg-muted); font: 600 11px/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.ah-divider::after { content:''; flex: 1; height: 1px; background: var(--border); }
+
+/* layout */
+.ah-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 980px) { .ah-grid { grid-template-columns: 1fr; } }
+
+/* week of day-columns */
+.ah-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+.ah-day {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-2xl);
+  display: flex; flex-direction: column; min-height: 240px; overflow: hidden; position: relative;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ah-day.is-weekend { background: linear-gradient(180deg, #fafbfc 0%, #fff 60%); }
+.ah-day.is-today { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(31,168,190,.10); }
+.ah-day.is-selected:not(.is-today) { outline: 2px solid rgba(31,168,190,.33); outline-offset: -2px; }
+.ah-day.is-empty { background: repeating-linear-gradient(135deg, #fff 0 6px, #fafbfc 6px 12px); }
+
+.ah-day-head { padding: 12px 12px 8px; display:flex; align-items:center; justify-content:space-between; }
+.ah-day-name { font: 600 11px/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); }
+.ah-day-date { font: 700 22px/1 var(--font-sans); color: var(--fg); margin-top: 4px; letter-spacing: -.01em; }
+.ah-today-pill { background: var(--primary); color: #fff; font: 600 9px/1 var(--font-sans); padding: 3px 6px; border-radius: 9999px; letter-spacing: .04em; text-transform: uppercase; }
+.ah-day-body { padding: 0 10px 10px; display:flex; flex-direction: column; gap: 6px; flex: 1; }
+.ah-copybtn { position:absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 6px; background: transparent; border: none; color: var(--fg-muted); display:none; align-items:center; justify-content:center; cursor:pointer; }
+.ah-day:hover .ah-copybtn { display:flex; }
+.ah-copybtn:hover { background: var(--muted); color: var(--fg); }
+
+/* "open hours" ribbon */
+.ah-ribbon { position: relative; height: 4px; margin: 4px 12px 8px; background: var(--muted); border-radius: 9999px; overflow: hidden; }
+.ah-ribbon-fill { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, var(--primary), #56cdde); border-radius: 9999px; }
+
+/* rule chip */
+.ah-rule {
+  background: rgba(31,168,190,.08); border: 1px solid rgba(31,168,190,.18); color: var(--primary);
+  border-radius: var(--radius-lg); padding: 8px 10px; cursor: pointer; transition: all .15s;
+  display:flex; flex-direction: column; gap: 3px; position: relative;
+}
+.ah-rule:hover { background: rgba(31,168,190,.14); border-color: rgba(31,168,190,.30); }
+.ah-rule-time { font: 600 12px/1.1 var(--font-sans); }
+.ah-rule-meta { font: 500 10px/1.1 var(--font-sans); color: var(--fg-muted); }
+
+.ah-add {
+  width: 100%; border: 1px dashed var(--border); background: transparent;
+  border-radius: 8px; padding: 7px; font: 500 11px/1 var(--font-sans); color: var(--fg-muted);
+  display:flex; align-items:center; justify-content:center; gap: 4px; cursor: pointer; transition: all .15s;
+}
+.ah-add:hover { border-color: var(--primary); color: var(--primary); background: rgba(31,168,190,.05); }
+.ah-empty-msg { font: 400 11px/1.4 var(--font-sans); color: var(--fg-muted); text-align:center; padding: 18px 8px; font-style: italic; }
+
+/* templates row */
+.ah-templates { display:flex; flex-wrap: wrap; gap: 8px; }
+.ah-template {
+  font: 500 12px/1 var(--font-sans);
+  padding: 7px 12px; border-radius: 9999px;
+  background: #fff; border: 1px solid var(--border);
+  color: var(--fg); display:inline-flex; align-items:center; gap: 6px; cursor: pointer;
+  transition: all .15s;
+}
+.ah-template:hover { border-color: var(--primary); color: var(--primary); background: rgba(31,168,190,.05); }
+
+/* preview rail */
+.ah-side { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-2xl); padding: 18px; position: sticky; top: 20px; }
+.ah-side h3 { font: 600 14px/1 var(--font-sans); margin: 0 0 4px; }
+.ah-side-sub { font: 400 12px/1.4 var(--font-sans); color: var(--fg-muted); margin: 0 0 14px; }
+.ah-mini-cal { display:flex; gap: 6px; margin-bottom: 14px; }
+.ah-mini-day { flex: 1; padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; text-align:center; transition: all .15s; }
+.ah-mini-day:hover { border-color: var(--primary); }
+.ah-mini-day.is-on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.ah-mini-day .d { font: 500 10px/1 var(--font-sans); opacity: .7; text-transform: uppercase; letter-spacing: .04em; }
+.ah-mini-day .n { font: 700 14px/1 var(--font-sans); margin-top: 4px; display:block; }
+.ah-side-meta { display:flex; justify-content: space-between; font: 500 12px/1 var(--font-sans); color: var(--fg-muted); margin-bottom: 12px; }
+.ah-side-meta b { color: var(--fg); font-weight: 700; font-size: 16px; }
+.ah-slots-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ah-slot { padding: 7px 4px; border: 1px solid var(--border); border-radius: 6px; font: 500 12px/1 var(--font-sans); text-align: center; background: #fff; }
+.ah-slot.is-taken { background: var(--muted); color: var(--fg-muted); text-decoration: line-through; opacity: .7; }
+.ah-slot.is-next { background: var(--primary); color: #fff; border-color: var(--primary); }
+.ah-side-foot {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+  display:flex; gap: 6px; align-items:center; font-size: 11px; color: var(--fg-muted);
+}
+.ah-side-foot b { color: var(--fg); }

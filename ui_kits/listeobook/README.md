@@ -15,6 +15,7 @@ A high-fidelity React recreation of the customer-facing booking flow from `custo
 - `Chrome.jsx` — `Navbar`, `Footer`
 - `BookingComponents.jsx` — `ServiceCard`, `BookingPanel`, `BookingCard`
 - `Pages.jsx` — `ServicesPage`, `ServiceDetailPage`, `BookWizard`, `AccountBookings`, `SignInPage`
+- `AvailabilityHours.jsx` + `availability.css` — merchant-facing weekly schedule editor (`<AvailabilityHours service rules .../>`); demo at `availability.html`. Generalized from the V1 "Shop hours" exploration in `designs/availability/`.
 
 ## How it differs from the codebase
 - Vue → React (cosmetic recreation, not a port).

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Loader2, Trash2 } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 import type { AvailabilityBlock } from '~/types'
 
 const props = defineProps<{
@@ -14,7 +15,6 @@ const emit = defineEmits<{
 }>()
 
 const { createBlock, deleteBlock } = useBusinessOwner()
-const { toast } = await import('vue-sonner')
 
 const form = reactive({
   blockDate: props.block?.blockDate ?? props.prefilledDate ?? '',
