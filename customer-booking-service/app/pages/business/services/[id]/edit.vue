@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { toast } from 'vue-sonner'
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
 const route = useRoute()
 const serviceId = route.params.id as string
 const { updateService } = useBusinessOwner()
 const { fetchService } = useBooking()
+const { notify } = useNotify()
 
 const service = ref<any>(null)
 const loading = ref(false)
@@ -20,10 +20,10 @@ async function handleSubmit(data: any) {
   loading.value = true
   try {
     await updateService(serviceId, data)
-    toast.success('Service updated')
+    notify.success('Service updated')
     await navigateTo('/business/services')
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to update service')
+    notify.error('Failed to update service', e?.data?.message)
   } finally {
     loading.value = false
   }

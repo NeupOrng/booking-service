@@ -8,6 +8,7 @@
 >
 > **Part A (§3–§9):** Customer-facing endpoints — replace mock data in `composables/useBooking.ts`
 > **Part B (§10):** Business-owner endpoints — implement `composables/useBusinessOwner.ts`
+> **Part C (§11):** Reviews endpoints — implement `composables/useReviews.ts`
 
 ---
 
@@ -348,13 +349,24 @@ function slotLabel(slot: AvailabilitySlot): string {
 | `GET` | `/files/:id/url` | Bearer | Returns `{ url: string }` — presigned URL, 1-hour expiry |
 | `DELETE` | `/files/:id` | Bearer | Returns `{ message: 'File deleted' }` |
 
+**`FileResponseDto`** (returned by upload):
+```ts
+interface FileResponseDto {
+  id: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  createdAt: string
+}
+```
+
 **Upload helper:**
 ```ts
 async function uploadAvatar(file: File): Promise<string> {
   const { $api } = useNuxtApp()
   const form = new FormData()
   form.append('file', file)
-  const res = await $api<{ id: string }>('/files/upload', {
+  const res = await $api<FileResponseDto>('/files/upload', {
     method: 'POST',
     body: form,
     query: { subfolder: 'avatars' },
@@ -375,56 +387,138 @@ async function getFileUrl(fileId: string): Promise<string> {
 
 ---
 
-## 8. Bookings endpoints — NOT YET IMPLEMENTED IN BACKEND
+## 8. Bookings endpoints
 
-The `BookingsModule` does not exist yet. Keep the mock data in `useBooking.ts` for:
-- `createBooking()`
-- `fetchAccountBookings()`
-- `fetchAccountBookingStats()`
-- `cancelBooking()`
+The `BookingsModule` is fully implemented. Replace all mock data in `useBooking.ts`.
 
-When `BookingsModule` is added, the expected contract will be:
+### 8.1 Create a booking
 
 ```
-POST   /bookings                  Create a booking
-GET    /bookings?status=upcoming  List current user's bookings
-GET    /bookings/:id              Booking detail
-PATCH  /bookings/:id/cancel       Cancel a booking
-GET    /bookings/stats            { upcoming, completed, total_spent }
+POST /bookings
 ```
 
-**Expected request body for `POST /bookings`:**
+**Request body:**
 ```ts
 {
-  serviceId: string      // UUID
-  bookingDate: string    // 'YYYY-MM-DD'
-  bookingTime: string    // 'HH:mm'
+  serviceId: string            // UUID
+  bookingDate: string          // 'YYYY-MM-DD'
+  bookingTime: string          // 'HH:mm'
+  notesFromCustomer?: string   // optional, shown to business
 }
 ```
 
-**Planned response shape (to inform frontend types now):**
+**Response — `BookingResponse`:**
 ```ts
 interface BookingResponse {
   id: string
-  reference: string        // e.g. '#BK-99120'
+  reference: string            // e.g. '#BK-99120'
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  serviceId: string
-  serviceName: string
-  businessName: string
-  bookingDate: string      // 'YYYY-MM-DD'
-  bookingTime: string      // 'HH:mm'
+  service: {
+    id: string
+    name: string
+    coverImageUrl: string | null
+    durationMinutes: number
+    category: { slug: string }
+  }
+  business: { id: string; name: string; [key: string]: any }
+  customer: { id: string; fullName: string; email: string | null; avatarUrl: string | null }
+  bookingDate: string          // 'YYYY-MM-DD'
+  bookingTime: string          // 'HH:mm'
   priceCents: number
-  cancelledBy: 'customer' | 'business' | null
+  cancelledBy: 'customer' | 'business' | 'admin' | null
   cancelledAt: string | null
   refundStatus: 'refunded' | 'partial' | 'none' | null
   refundAmount: number | null
-  canCancel: boolean
-  canReschedule: boolean
+  notesFromCustomer: string | null
+  canCancel: boolean           // true when status is pending or confirmed
+  canReschedule: boolean       // true when status is pending or confirmed
 }
 ```
 
-> When implementing, map `priceCents → price`, `bookingDate → date`, `bookingTime → time`,
-> `cancelledBy → cancelled_by`, etc. to fit the existing `Booking` type in `types/index.ts`.
+**Errors:** `404` slot not available / service not found · `409` time slot fully booked
+
+**Implementation:**
+```ts
+async function createBooking(data: {
+  serviceId: string
+  bookingDate: string
+  bookingTime: string
+  notesFromCustomer?: string
+}): Promise<BookingResponse> {
+  const { $api } = useNuxtApp()
+  return $api<BookingResponse>('/bookings', { method: 'POST', body: data })
+}
+```
+
+---
+
+### 8.2 List my bookings
+
+```
+GET /bookings/my
+```
+
+| Query param | Type | Notes |
+|---|---|---|
+| `status` | `'upcoming' \| 'past' \| 'cancelled'` | Optional filter |
+| `page` | `number` | Default 1 |
+| `perPage` | `number` | Default 10, max 50 |
+
+**Response:** `{ data: BookingResponse[]; meta: { total, page, perPage, lastPage } }`
+
+```ts
+async function fetchMyBookings(params?: {
+  status?: 'upcoming' | 'past' | 'cancelled'
+  page?: number
+  perPage?: number
+}): Promise<{ data: BookingResponse[]; meta: any }> {
+  const { $api } = useNuxtApp()
+  return $api('/bookings/my', { query: params })
+}
+```
+
+---
+
+### 8.3 Get my booking stats
+
+```
+GET /bookings/my/stats
+```
+
+**Response:** `{ upcoming: number; completed: number; totalSpent: number }`
+
+> `totalSpent` is in **cents** — divide by 100 to display as dollars.
+
+```ts
+async function fetchMyStats(): Promise<{ upcoming: number; completed: number; totalSpent: number }> {
+  const { $api } = useNuxtApp()
+  return $api('/bookings/my/stats')
+}
+```
+
+---
+
+### 8.4 Cancel my booking
+
+```
+POST /bookings/my/:id/cancel
+```
+
+**Body:** `{ reason?: string }` (max 500 chars, optional)
+**Response:** `BookingResponse` with `status: 'cancelled'`
+
+**Errors:** `403` — not own booking, already cancelled, or completed
+
+```ts
+async function cancelMyBooking(id: string, reason?: string): Promise<BookingResponse> {
+  const { $api } = useNuxtApp()
+  return $api(`/bookings/my/${id}/cancel`, { method: 'POST', body: { reason } })
+}
+```
+
+> Map backend `BookingResponse` to the existing frontend `Booking` type in `types/index.ts`:
+> `priceCents → price`, `bookingDate → date`, `bookingTime → time`,
+> `cancelledBy → cancelled_by`, `service.name → service_name`, etc.
 
 ---
 
@@ -698,20 +792,177 @@ async function deleteBlock(serviceId: string, blockId: string): Promise<void> {
 
 ---
 
-### 10.5 Deferred — business bookings (BookingsModule not yet implemented)
-
-The requirement references these endpoints for the booking inbox (`/business/bookings`).
-Keep them as stubs in `useBusinessOwner.ts` until the backend ships.
+### 10.5 Business bookings inbox
 
 ```
-GET   /bookings/business?status=&page=&perPage=&dateFrom=&dateTo=
-PATCH /bookings/business/:id/status   body: { status: 'confirmed' | 'completed' }
-POST  /bookings/business/:id/cancel   body: { reason? }
+GET   /bookings/business
+PATCH /bookings/business/:id/status
+POST  /bookings/business/:id/cancel
+```
+
+All three require `role = 'business_owner'` (enforced by `RolesGuard`).
+
+**`GET /bookings/business` query params:**
+
+| Param | Type | Notes |
+|---|---|---|
+| `status` | `'pending' \| 'confirmed' \| 'completed' \| 'cancelled'` | Optional |
+| `dateFrom` | `string` | `'YYYY-MM-DD'` — optional range start |
+| `dateTo` | `string` | `'YYYY-MM-DD'` — optional range end |
+| `page` | `number` | Default 1 |
+| `perPage` | `number` | Default 10, max 50 |
+
+**Response:** `{ data: BookingResponse[]; meta: { total, page, perPage, lastPage } }`
+Each `BookingResponse` includes `customer: { id, fullName, email, avatarUrl }` for the inbox display.
+
+**`PATCH /bookings/business/:id/status` body:** `{ status: 'confirmed' | 'completed' }`
+Valid transitions: `pending → confirmed`, `confirmed → completed`. Returns updated `BookingResponse`.
+**Error:** `400` invalid status transition.
+
+**`POST /bookings/business/:id/cancel` body:** `{ reason?: string }`
+Returns updated `BookingResponse` with `status: 'cancelled'`, `cancelledBy: 'business'`.
+
+**Implementation:**
+```ts
+async function fetchBusinessBookings(params?: {
+  status?: string; dateFrom?: string; dateTo?: string
+  page?: number; perPage?: number
+}): Promise<{ data: BookingResponse[]; meta: any }> {
+  const api = getApi()
+  return api('/bookings/business', { query: params })
+}
+
+async function updateBookingStatus(id: string, status: 'confirmed' | 'completed'): Promise<BookingResponse> {
+  const api = getApi()
+  return api(`/bookings/business/${id}/status`, { method: 'PATCH', body: { status } })
+}
+
+async function cancelBusinessBooking(id: string, reason?: string): Promise<BookingResponse> {
+  const api = getApi()
+  return api(`/bookings/business/${id}/cancel`, { method: 'POST', body: { reason } })
+}
 ```
 
 ---
 
-## 11. Implementation checklist
+## 11. Reviews endpoints
+
+The `ReviewsModule` is fully implemented. Create `composables/useReviews.ts`.
+
+### 11.1 List reviews for a service (public)
+
+```
+GET /reviews?serviceId=<uuid>&page=1&perPage=10
+```
+
+**Response:**
+```ts
+{
+  data: ReviewResponse[]
+  meta: { total: number; page: number; perPage: number; lastPage: number }
+}
+
+interface ReviewResponse {
+  id: string
+  serviceId: string
+  rating: number              // 1–5
+  comment: string | null
+  reviewerInitials: string    // e.g. 'JD' — derived from reviewer's full name
+  reviewerName: string        // full name of the reviewer
+  createdAt: string           // ISO datetime
+}
+```
+
+```ts
+async function fetchReviews(serviceId: string, params?: { page?: number; perPage?: number }) {
+  const { $api } = useNuxtApp()
+  return $api<{ data: ReviewResponse[]; meta: any }>('/reviews', {
+    query: { serviceId, ...params },
+  })
+}
+```
+
+---
+
+### 11.2 Get rating stats for a service (public)
+
+```
+GET /reviews/stats?serviceId=<uuid>
+```
+
+**Response:** `{ avgRating: number; reviewCount: number }`
+
+```ts
+async function fetchReviewStats(serviceId: string) {
+  const { $api } = useNuxtApp()
+  return $api<{ avgRating: number; reviewCount: number }>('/reviews/stats', {
+    query: { serviceId },
+  })
+}
+```
+
+> Display `avgRating` as a star rating. Show `reviewCount` next to it.
+
+---
+
+### 11.3 Submit a review (authenticated)
+
+```
+POST /reviews
+```
+
+**Request body:**
+```ts
+{
+  serviceId: string    // UUID of the service
+  bookingId?: string   // UUID of the completed booking (optional but recommended)
+  rating: number       // 1–5 integer
+  comment?: string     // max 1000 chars
+}
+```
+
+**Response:** `{ id, serviceId, rating, comment, createdAt }`
+
+**Errors:**
+- `403` — no completed booking for this service
+- `409` — already reviewed this service (one review per customer per service)
+
+```ts
+async function createReview(data: {
+  serviceId: string; bookingId?: string; rating: number; comment?: string
+}) {
+  const { $api } = useNuxtApp()
+  return $api('/reviews', { method: 'POST', body: data })
+}
+```
+
+> Gate the review form UI: only show the "Write a review" button when the customer has a
+> `completed` booking for the service AND has not yet reviewed it (check `409` on submit
+> as a fallback, but ideally pre-check client-side using the bookings list).
+
+---
+
+### 11.4 Delete a review (authenticated)
+
+```
+DELETE /reviews/:id   → 200 { message: 'Review deleted' }
+```
+
+- Customers may only delete their own reviews.
+- Admins may delete any review.
+
+**Errors:** `403` not own review · `404` review not found
+
+```ts
+async function deleteReview(id: string) {
+  const { $api } = useNuxtApp()
+  return $api(`/reviews/${id}`, { method: 'DELETE' })
+}
+```
+
+---
+
+## 12. Implementation checklist
 
 ### Part A — Customer portal
 
@@ -725,10 +976,10 @@ POST  /bookings/business/:id/cancel   body: { reason? }
 - [ ] `updateProfile()` → `PATCH /users/me` (add to `useAuth`)
 - [ ] `deactivateAccount()` → `DELETE /users/me` (add to `useAuth`)
 - [ ] Avatar upload → `POST /files/upload` + store UUID in profile via `PATCH /users/me`
-- [ ] *(deferred)* `createBooking()` → `POST /bookings`
-- [ ] *(deferred)* `fetchMyBookings()` → `GET /bookings/my?status=...`
-- [ ] *(deferred)* `fetchBookingStats()` → `GET /bookings/stats`
-- [ ] *(deferred)* `cancelMyBooking()` → `POST /bookings/my/:id/cancel`
+- [ ] `createBooking()` → `POST /bookings` — include optional `notesFromCustomer`
+- [ ] `fetchMyBookings()` → `GET /bookings/my?status=upcoming|past|cancelled`
+- [ ] `fetchMyStats()` → `GET /bookings/my/stats` — returns `{ upcoming, completed, totalSpent }`
+- [ ] `cancelMyBooking(id, reason?)` → `POST /bookings/my/:id/cancel`
 
 ### Part B — Business owner portal
 
@@ -745,11 +996,21 @@ POST  /bookings/business/:id/cancel   body: { reason? }
 - [ ] `deleteBlock` → `DELETE /services/:id/availability-blocks/:blockId` — 204 response
 - [ ] Add `role` middleware — redirect `business_owner` away from `/book/*`, `customer` away from `/business/*`
 - [ ] Post-login redirect — `customer → /services`, `business_owner → /business`
-- [ ] *(deferred)* Business bookings inbox → `GET /bookings/business`, `PATCH /bookings/business/:id/status`, `POST /bookings/business/:id/cancel`
+- [ ] `fetchBusinessBookings()` → `GET /bookings/business` — show `customer.fullName` in booking inbox rows
+- [ ] `updateBookingStatus(id, status)` → `PATCH /bookings/business/:id/status` — only `confirmed`/`completed`
+- [ ] `cancelBusinessBooking(id, reason?)` → `POST /bookings/business/:id/cancel`
+
+### Part C — Reviews
+
+- [ ] Create `composables/useReviews.ts`
+- [ ] `fetchReviews(serviceId)` → `GET /reviews?serviceId=` — display on service detail page
+- [ ] `fetchReviewStats(serviceId)` → `GET /reviews/stats?serviceId=` — show avg star rating on service cards and detail
+- [ ] `createReview(data)` → `POST /reviews` — gate UI: only show form after a completed booking; handle `409` (already reviewed)
+- [ ] `deleteReview(id)` → `DELETE /reviews/:id` — show delete button only for own reviews
 
 ---
 
-## 12. `nuxt.config.ts` — runtime config required
+## 13. `nuxt.config.ts` — runtime config required
 
 Make sure `apiBase` is exposed to the client:
 

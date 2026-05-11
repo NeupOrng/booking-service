@@ -4,6 +4,7 @@ import { Loader2, CalendarDays } from 'lucide-vue-next';
 definePageMeta({ layout: false });
 
 const { login, isAuthenticated, user } = useAuth();
+const { notify } = useNotify()
 const route = useRoute();
 
 if (isAuthenticated.value)
@@ -26,7 +27,7 @@ async function handleSubmit() {
             (user.value?.role === 'business_owner' ? '/business' : '/services');
         await navigateTo(redirect);
     } catch (e: any) {
-        error.value = e?.data?.message || 'Invalid email or password.';
+        error.value = e?.data?.message.message || 'Invalid email or password.';
     } finally {
         loading.value = false;
     }

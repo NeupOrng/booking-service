@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Search, X } from 'lucide-vue-next';
-import { toast } from 'vue-sonner';
 import type { Booking } from '~/models';
 import type { Meta } from '~/types';
 
@@ -12,6 +11,7 @@ const {
     completeBooking,
     cancelBusinessBooking,
 } = useBusinessOwner();
+const { notify } = useNotify();
 
 const bookings = ref<Booking[]>([]);
 const meta = ref<Meta>({ total: 0, page: 1, perPage: 20, lastPage: 1 });
@@ -80,7 +80,7 @@ async function load() {
         bookings.value = res.data;
         meta.value = res.meta;
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to load bookings');
+        notify.error('Failed to load bookings', err?.data?.message);
     } finally {
         loading.value = false;
     }
@@ -123,9 +123,9 @@ async function handleConfirm(id: string) {
         updateRow(await confirmBooking(id));
         statusCounts.pending = Math.max(0, statusCounts.pending - 1);
         statusCounts.confirmed++;
-        toast.success('Booking confirmed');
+        notify.success('Booking confirmed');
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to confirm');
+        notify.error('Failed to confirm', err?.data?.message);
     } finally {
         loadingRowId.value = null;
     }
@@ -137,9 +137,9 @@ async function handleComplete(id: string) {
         updateRow(await completeBooking(id));
         statusCounts.confirmed = Math.max(0, statusCounts.confirmed - 1);
         statusCounts.completed++;
-        toast.success('Booking marked completed');
+        notify.success('Booking marked completed');
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to update');
+        notify.error('Failed to update', err?.data?.message);
     } finally {
         loadingRowId.value = null;
     }
@@ -151,9 +151,9 @@ async function handleCancel(id: string, reason: string) {
         updateRow(await cancelBusinessBooking(id, reason || undefined));
         statusCounts.cancelled++;
         expandedCancelId.value = null;
-        toast.success('Booking cancelled');
+        notify.success('Booking cancelled');
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to cancel');
+        notify.error('Failed to cancel', err?.data?.message);
     } finally {
         loadingRowId.value = null;
     }

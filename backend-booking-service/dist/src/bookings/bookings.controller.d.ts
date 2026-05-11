@@ -9,22 +9,20 @@ export declare class BookingsController {
     createBooking(dto: CreateBookingDto, user: {
         id: string;
     }): Promise<{
-        id: string;
-        reference: string;
-        status: string;
+        id: any;
+        reference: any;
+        status: any;
         service: {
             id: any;
             name: any;
         };
-        business: {
-            id: any;
-            name: any;
-        };
-        bookingDate: string;
-        bookingTime: string;
-        priceCents: number;
-        durationMinutes: number;
-        notesFromCustomer: string;
+        bookingDate: any;
+        bookingTime: any;
+        priceCents: any;
+        durationMinutes: any;
+        notesFromCustomer: any;
+        customer: any;
+        business: any;
         canCancel: boolean;
         canReschedule: boolean;
     }>;

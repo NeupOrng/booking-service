@@ -43,11 +43,21 @@ let BookingsRepository = class BookingsRepository {
         this.db = db;
     }
     async create(data) {
+        var _a;
         const [row] = await this.db.db
             .insert(schema_1.bookings)
             .values(data)
             .returning();
-        return row;
+        const result = await this.db.db
+            .select(bookingJoinSelect())
+            .from(schema_1.bookings)
+            .innerJoin(schema_1.services, (0, drizzle_orm_1.eq)(schema_1.bookings.serviceId, schema_1.services.id))
+            .leftJoin(schema_1.categories, (0, drizzle_orm_1.eq)(schema_1.services.categoryId, schema_1.categories.id))
+            .innerJoin(schema_1.businesses, (0, drizzle_orm_1.eq)(schema_1.bookings.businessId, schema_1.businesses.id))
+            .innerJoin(schema_1.users, (0, drizzle_orm_1.eq)(schema_1.bookings.customerId, schema_1.users.id))
+            .where((0, drizzle_orm_1.eq)(schema_1.bookings.id, row.id))
+            .limit(1);
+        return (_a = result[0]) !== null && _a !== void 0 ? _a : null;
     }
     async writeSlotLockAudit(serviceId, slotDate, slotTime, userId, bookingId) {
         const [datePart] = slotDate.split('T');

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Loader2, Trash2 } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import type { AvailabilityRule } from '~/types'
 
 const props = defineProps<{
@@ -15,6 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const { createRule, updateRule, deleteRule } = useBusinessOwner()
+const { notify } = useNotify()
 
 const form = reactive({
   startTime: props.rule?.startTime ?? '09:00',
@@ -65,10 +65,10 @@ async function save() {
         isActive: true,
       })
     }
-    toast.success('Rule saved')
+    notify.success('Rule saved')
     emit('saved', saved)
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to save rule')
+    notify.error('Failed to save rule', e?.data?.message)
   } finally {
     saving.value = false
   }
@@ -79,10 +79,10 @@ async function remove() {
   deleting.value = true
   try {
     await deleteRule(props.serviceId, props.rule.id)
-    toast.success('Rule deleted')
+    notify.success('Rule deleted')
     emit('deleted', props.rule.id)
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to delete rule')
+    notify.error('Failed to delete rule', e?.data?.message)
   } finally {
     deleting.value = false
   }

@@ -66,15 +66,16 @@ let BookingsService = class BookingsService {
         catch (_c) { }
         return {
             id: booking.id,
-            reference: booking.reference,
+            reference: booking.booking.reference,
             status: booking.status,
             service: { id: service.id, name: service.name },
-            business: { id: business.id, name: business.name },
             bookingDate: booking.bookingDate,
             bookingTime: booking.bookingTime,
             priceCents: booking.priceCents,
             durationMinutes: booking.durationMinutes,
             notesFromCustomer: (_a = booking.notesFromCustomer) !== null && _a !== void 0 ? _a : null,
+            customer: booking.customer,
+            business: booking.business,
             canCancel: true,
             canReschedule: true,
         };

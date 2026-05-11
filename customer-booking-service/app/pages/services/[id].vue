@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { MapPin, Star, Info, ChevronLeft } from 'lucide-vue-next'
-import type { Service } from '~/types'
+import { MapPin, Star, Info, ChevronLeft, ChevronDown, Loader2 } from 'lucide-vue-next'
+import type { Service, Review, Meta } from '~/types'
 
 const route = useRoute()
 const serviceId = route.params.id as string
+
 const { fetchService } = useBooking()
+const { fetchReviews, createReview } = useReviews()
+const { isAuthenticated } = useAuth()
+const { notify } = useNotify()
 
 const service = ref<Service | null>(null)
 const loading = ref(true)
 
-onMounted(async () => {
-  service.value = await fetchService(serviceId)
-  loading.value = false
-})
+// ── Reviews state ─────────────────────────────────────────────────────────────
+const reviews = ref<Review[]>([])
+const reviewsMeta = ref<Meta>({ total: 0, page: 1, perPage: 6, lastPage: 1 })
+const reviewsLoading = ref(false)
+const reviewsPage = ref(1)
+
+// ── Review form ───────────────────────────────────────────────────────────────
+// ?review=<bookingId> auto-opens the form from BookingCard "Leave a review" link
+const reviewFormOpen = ref(false)
+const reviewBookingId = ref<string | undefined>(undefined)
+const submittingReview = ref(false)
 
 function getCategoryStyle(slug: string): string {
   const map: Record<string, string> = {
@@ -22,6 +33,71 @@ function getCategoryStyle(slug: string): string {
   }
   return map[slug] || 'bg-slate-50 text-slate-700 border-slate-200'
 }
+
+async function loadReviews(page = 1) {
+  reviewsLoading.value = true
+  try {
+    const res = await fetchReviews(serviceId, { page, perPage: 6 })
+    if (page === 1) {
+      reviews.value = res.data
+    } else {
+      reviews.value.push(...res.data)
+    }
+    reviewsMeta.value = res.meta
+    reviewsPage.value = page
+  } catch {
+    // non-critical — reviews section stays empty
+  } finally {
+    reviewsLoading.value = false
+  }
+}
+
+async function handleReviewSubmit(data: { rating: number; comment: string; bookingId?: string }) {
+  submittingReview.value = true
+  try {
+    const newReview = await createReview({
+      serviceId,
+      bookingId: data.bookingId,
+      rating: data.rating,
+      comment: data.comment || undefined,
+    })
+    reviewFormOpen.value = false
+    reviews.value.unshift(newReview)
+    reviewsMeta.value.total++
+    if (service.value) {
+      service.value.review_count = (service.value.review_count ?? 0) + 1
+      const total = reviews.value.reduce((s, r) => s + r.rating, 0)
+      service.value.avg_rating = Math.round((total / reviews.value.length) * 10) / 10
+    }
+    notify.success('Review submitted', 'Thank you for your feedback!')
+  } catch (e: any) {
+    if (e?.status === 409 || e?.response?.status === 409) {
+      notify.error('Already reviewed', 'You have already reviewed this service.')
+    } else if (e?.status === 403 || e?.response?.status === 403) {
+      notify.error('Not eligible', 'You need a completed booking to review this service.')
+    } else {
+      notify.error('Failed to submit', e?.data?.message ?? e?.message)
+    }
+  } finally {
+    submittingReview.value = false
+  }
+}
+
+onMounted(async () => {
+  const [svc] = await Promise.all([
+    fetchService(serviceId),
+    loadReviews(1),
+  ])
+  service.value = svc
+  loading.value = false
+
+  // Auto-open review form if navigated from BookingCard "Leave a review"
+  const reviewParam = route.query.review as string | undefined
+  if (reviewParam && isAuthenticated.value) {
+    reviewBookingId.value = reviewParam
+    reviewFormOpen.value = true
+  }
+})
 </script>
 
 <template>
@@ -77,7 +153,6 @@ function getCategoryStyle(slug: string): string {
               <div v-else class="w-full h-full flex items-center justify-center text-6xl font-bold text-foreground/10">
                 {{ service.name.charAt(0) }}
               </div>
-              <!-- Category overlay badge -->
               <span
                 :class="['absolute top-4 left-4 text-xs font-semibold px-3 py-1.5 rounded-full border', getCategoryStyle(service.category.slug)]"
               >
@@ -91,8 +166,10 @@ function getCategoryStyle(slug: string): string {
               <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
                 <div class="flex items-center gap-1.5">
                   <Star class="w-4 h-4 text-amber-400 fill-amber-400" />
-                  <span class="font-semibold text-foreground">{{ service.avg_rating ?? '5.0' }}</span>
-                  <span>({{ service.review_count ?? 0 }} reviews)</span>
+                  <span class="font-semibold text-foreground">
+                    {{ service.avg_rating != null ? service.avg_rating.toFixed(1) : '—' }}
+                  </span>
+                  <span>({{ reviewsMeta.total }} review{{ reviewsMeta.total !== 1 ? 's' : '' }})</span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <MapPin class="w-4 h-4" />
@@ -132,29 +209,63 @@ function getCategoryStyle(slug: string): string {
               </AlertDescription>
             </Alert>
 
-            <!-- Reviews -->
-            <div>
-              <h2 class="text-xl font-bold mb-5">Recent Reviews</h2>
-              <div class="space-y-5">
-                <div
-                  v-for="i in 3"
-                  :key="i"
-                  class="p-4 bg-card rounded-xl border border-border"
-                >
-                  <div class="flex items-center gap-3 mb-3">
-                    <Avatar class="w-9 h-9">
-                      <AvatarFallback class="text-xs font-semibold bg-primary/10 text-primary">CX</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div class="flex items-center gap-0.5 mb-0.5">
-                        <Star v-for="s in 5" :key="s" class="w-3 h-3 fill-amber-400 text-amber-400" />
-                      </div>
-                      <p class="text-xs text-muted-foreground">1 week ago</p>
-                    </div>
-                  </div>
-                  <p class="text-sm text-muted-foreground leading-relaxed">
-                    "Absolutely amazing experience. The facility was clean and the staff was very professional. Highly recommended!"
+            <!-- Reviews section -->
+            <div id="reviews">
+              <div class="flex items-center justify-between mb-5">
+                <div>
+                  <h2 class="text-xl font-bold">Reviews</h2>
+                  <p v-if="reviewsMeta.total > 0" class="text-sm text-muted-foreground mt-0.5">
+                    {{ reviewsMeta.total }} review{{ reviewsMeta.total !== 1 ? 's' : '' }}
                   </p>
+                </div>
+                <Button
+                  v-if="isAuthenticated"
+                  variant="outline"
+                  size="sm"
+                  @click="reviewFormOpen = true"
+                >
+                  Write a review
+                </Button>
+                <NuxtLink v-else to="/auth/login" class="text-sm text-primary hover:underline">
+                  Sign in to review
+                </NuxtLink>
+              </div>
+
+              <!-- Skeleton while loading -->
+              <div v-if="reviewsLoading && reviews.length === 0" class="space-y-3">
+                <Skeleton v-for="i in 3" :key="i" class="h-24 w-full rounded-xl" />
+              </div>
+
+              <!-- Empty state -->
+              <div
+                v-else-if="reviews.length === 0"
+                class="py-12 text-center bg-muted/20 rounded-xl border border-border"
+              >
+                <Star class="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                <p class="text-sm font-medium text-muted-foreground">No reviews yet</p>
+                <p class="text-xs text-muted-foreground mt-1">Be the first to share your experience.</p>
+              </div>
+
+              <!-- Review list -->
+              <div v-else class="space-y-3">
+                <ReviewCard
+                  v-for="review in reviews"
+                  :key="review.id"
+                  :review="review"
+                />
+
+                <!-- Load more -->
+                <div v-if="reviewsPage < reviewsMeta.lastPage" class="pt-2 text-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    :disabled="reviewsLoading"
+                    @click="loadReviews(reviewsPage + 1)"
+                  >
+                    <Loader2 v-if="reviewsLoading" class="w-4 h-4 mr-2 animate-spin" />
+                    <ChevronDown v-else class="w-4 h-4 mr-2" />
+                    Load more reviews
+                  </Button>
                 </div>
               </div>
             </div>
@@ -169,5 +280,14 @@ function getCategoryStyle(slug: string): string {
         </div>
       </div>
     </div>
+
+    <!-- Review form modal -->
+    <ReviewFormModal
+      v-model:open="reviewFormOpen"
+      :service-id="serviceId"
+      :booking-id="reviewBookingId"
+      :submitting="submittingReview"
+      @submit="handleReviewSubmit"
+    />
   </div>
 </template>

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Plus, Search, Pencil, Loader2, ImageOff } from 'lucide-vue-next';
 import { watchDebounced } from '@vueuse/core';
-import { toast } from 'vue-sonner';
-import type { Meta, ServiceCategory } from '~/types';
+import type { Meta } from '~/types';
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' });
 
 const { fetchMyServices, updateService } = useBusinessOwner();
 const { formatCurrency } = useFormatters();
+const { notify } = useNotify();
 
 // ── List state ────────────────────────────────────────────────────────────────
 const services = ref<any[]>([]);
@@ -26,9 +26,9 @@ async function toggleActive(s: any) {
     try {
         await updateService(s.id, { isActive: !s.isActive });
         s.isActive = !s.isActive;
-        toast.success(s.isActive ? 'Service activated' : 'Service deactivated');
+        notify.success(s.isActive ? 'Service activated' : 'Service deactivated');
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to update');
+        notify.error('Failed to update', err?.data?.message);
     } finally {
         togglingId.value = null;
         await load();
@@ -47,7 +47,7 @@ async function load() {
         services.value = res.data;
         meta.value = res.meta;
     } catch (err: any) {
-        toast.error(err?.data?.message ?? 'Failed to load services');
+        notify.error('Failed to load services', err?.data?.message);
     } finally {
         loading.value = false;
     }

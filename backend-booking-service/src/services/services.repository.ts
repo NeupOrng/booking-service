@@ -81,7 +81,6 @@ export class ServicesRepository {
                 .limit(perPage)
                 .offset(offset),
         ]);
-
         return { rows, total: Number(countResult[0].count) };
     }
 

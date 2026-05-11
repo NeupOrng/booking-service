@@ -8,6 +8,7 @@ import {
     Menu,
     X,
     LogOut,
+    MessageSquare,
 } from 'lucide-vue-next';
 
 const { user, logout } = useAuth();
@@ -18,6 +19,7 @@ const navLinks = [
     { label: 'Dashboard', path: '/business', icon: LayoutDashboard },
     { label: 'Bookings', path: '/business/bookings', icon: Calendar },
     { label: 'My Services', path: '/business/services', icon: ListChecks },
+    { label: 'Feedback', path: '/business/feedback', icon: MessageSquare },
     { label: 'Profile', path: '/business/profile', icon: User },
     { label: 'Account', path: '/business/account',  icon: UserCircle },
 ];

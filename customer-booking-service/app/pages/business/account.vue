@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Loader2, Camera, BadgeCheck } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
 const { user, updateProfile, deactivateAccount } = useAuth()
+const { notify } = useNotify()
 
 const { $api } = useNuxtApp()
 type Api = <T>(url: string, opts?: Record<string, unknown>) => Promise<T>
@@ -53,11 +53,11 @@ async function handleAvatarFile(event: Event) {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    toast.error('Please select an image file')
+    notify.error('Please select an image file')
     return
   }
   if (file.size > 5 * 1024 * 1024) {
-    toast.error('Image must be under 5 MB')
+    notify.error('Image must be under 5 MB')
     return
   }
 
@@ -74,9 +74,9 @@ async function handleAvatarFile(event: Event) {
 
     const { url } = await api<{ url: string }>(`/files/${uploaded.id}/url`)
     form.avatarUrl = url
-    toast.success('Photo updated')
+    notify.success('Photo updated')
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Upload failed')
+    notify.error('Upload failed', err?.data?.message)
   } finally {
     uploadingAvatar.value = false
   }
@@ -100,10 +100,10 @@ async function save() {
       avatarUrl: form.avatarUrl || undefined,
     })
     pristine.value = true
-    toast.success('Profile updated')
+    notify.success('Profile updated')
   } catch (err: any) {
     const msg = err?.data?.message
-    toast.error(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Failed to save profile'))
+    notify.error('Failed to save profile', Array.isArray(msg) ? msg.join(', ') : msg)
   } finally {
     saving.value = false
   }
@@ -114,9 +114,9 @@ async function confirmDeactivate() {
   deactivating.value = true
   try {
     await deactivateAccount()
-    toast.success('Account deactivated')
+    notify.success('Account deactivated')
   } catch {
-    toast.error('Failed to deactivate account')
+    notify.error('Failed to deactivate account')
     deactivating.value = false
     showDeactivateDialog.value = false
   }

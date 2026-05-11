@@ -40,7 +40,10 @@ let UsersService = class UsersService {
         return user;
     }
     async deactivate(id) {
-        await this.usersRepository.update(id, { isActive: false, updatedAt: new Date() });
+        await this.usersRepository.update(id, {
+            isActive: false,
+            updatedAt: new Date(),
+        });
     }
     async findOrCreateOAuth(provider, providerUserId, profile) {
         var _a;

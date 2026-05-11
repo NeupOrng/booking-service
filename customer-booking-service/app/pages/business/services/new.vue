@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { toast } from 'vue-sonner'
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
 const { createService } = useBusinessOwner()
+const { notify } = useNotify()
 const loading = ref(false)
 
 async function handleSubmit(data: any) {
   loading.value = true
   try {
     const created = await createService(data)
-    toast.success('Service created')
+    notify.success('Service created', `Redirecting to availability setup…`)
     await navigateTo(`/business/services/${created.id}/availability`)
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to create service')
+    notify.error('Failed to create service', e?.data?.message)
   } finally {
     loading.value = false
   }

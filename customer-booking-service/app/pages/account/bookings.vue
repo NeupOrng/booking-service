@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Wallet, CalendarCheck, CheckSquare } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
-import type { Booking } from '~/types'
+import type { Booking } from '~/models'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 
 const { fetchMyBookings, fetchBookingStats, cancelMyBooking } = useBooking()
+const { notify } = useNotify()
 const { formatCurrency } = useFormatters()
 
 const stats = ref<{ upcoming: number; completed: number; totalSpent: number } | null>(null)
@@ -37,7 +37,7 @@ async function loadTab(tab: Tab) {
     const { data } = await fetchMyBookings({ status: STATUS_MAP[tab] })
     tabCache.value.set(tab, data)
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Failed to load bookings')
+    notify.error('Failed to load bookings', err?.data?.message)
   } finally {
     loadingTab.value = false
   }
@@ -57,19 +57,20 @@ async function handleCancel(payload: { id: string; reason: string }) {
     const current = tabCache.value.get('upcoming') ?? []
     const idx = current.findIndex(b => b.id === payload.id)
     if (idx !== -1) {
-      const [removed] = current.splice(idx, 1)
-      removed.status = 'cancelled'
-      // Push to cancelled cache if already loaded
-      if (tabCache.value.has('cancelled')) {
-        tabCache.value.get('cancelled')!.unshift(removed)
+      const removed = current.splice(idx, 1)[0]
+      if (removed) {
+        removed.status = 'cancelled'
+        if (tabCache.value.has('cancelled')) {
+          tabCache.value.get('cancelled')!.unshift(removed)
+        }
       }
     }
 
     expandedCancelId.value = null
-    toast.success('Booking cancelled')
+    notify.success('Booking cancelled')
     fetchStats()
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Failed to cancel booking')
+    notify.error('Failed to cancel booking', err?.data?.message)
   }
 }
 </script>

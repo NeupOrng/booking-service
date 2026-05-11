@@ -48,12 +48,21 @@ export class BookingsRepository {
 
     async create(
         data: Omit<InsertBooking, 'id' | 'createdAt' | 'updatedAt'>,
-    ): Promise<SelectBooking> {
+    ): Promise<any | null> {
         const [row] = await this.db.db
             .insert(bookings)
             .values(data)
             .returning();
-        return row;
+        const result = await this.db.db
+            .select(bookingJoinSelect())
+            .from(bookings)
+            .innerJoin(services, eq(bookings.serviceId, services.id))
+            .leftJoin(categories, eq(services.categoryId, categories.id))
+            .innerJoin(businesses, eq(bookings.businessId, businesses.id))
+            .innerJoin(users, eq(bookings.customerId, users.id))
+            .where(eq(bookings.id, row.id))
+            .limit(1);
+        return result[0] ?? null;
     }
 
     async writeSlotLockAudit(

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Loader2, Trash2 } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import type { AvailabilityBlock } from '~/types'
 
 const props = defineProps<{
@@ -15,6 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const { createBlock, deleteBlock } = useBusinessOwner()
+const { notify } = useNotify()
 
 const form = reactive({
   blockDate: props.block?.blockDate ?? props.prefilledDate ?? '',
@@ -37,10 +37,10 @@ async function save() {
       ...(form.blockType === 'range' ? { startTime: form.startTime, endTime: form.endTime } : {}),
     }
     const saved = await createBlock(props.serviceId, payload)
-    toast.success('Block saved')
+    notify.success('Block saved')
     emit('saved', saved)
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to save block')
+    notify.error('Failed to save block', e?.data?.message)
   } finally {
     saving.value = false
   }
@@ -51,10 +51,10 @@ async function remove() {
   deleting.value = true
   try {
     await deleteBlock(props.serviceId, props.block.id)
-    toast.success('Block removed')
+    notify.success('Block removed')
     emit('deleted', props.block.id)
   } catch (e: any) {
-    toast.error(e?.data?.message ?? 'Failed to delete block')
+    notify.error('Failed to delete block', e?.data?.message)
   } finally {
     deleting.value = false
   }

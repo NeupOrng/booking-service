@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Briefcase, Calendar, CheckCircle2, Clock, ChevronRight, Loader2 } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import type { Booking } from '~/models'
 
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
 
 const { fetchMyBusiness, fetchBusinessBookings, fetchMyServices, confirmBooking, cancelBusinessBooking } = useBusinessOwner()
+const { notify } = useNotify()
 const { formatCurrency, formatBookingDate, formatBookingTime } = useFormatters()
 
 const business = ref<any>(null)
@@ -34,7 +34,7 @@ const fetchData = () => {
       stats.services = svcRes.meta.total
       recentServices.value = svcRes.data
     })
-    .catch(() => toast.error('Failed to load dashboard'))
+    .catch(() => notify.error('Failed to load dashboard'))
     .finally(() => { loading.value = false })
 }
 
@@ -50,9 +50,9 @@ async function handleConfirm(id: string) {
     if (idx !== -1) pendingBookings.value.splice(idx, 1, updated)
     stats.pending = Math.max(0, stats.pending - 1)
     stats.confirmed++
-    toast.success('Booking confirmed')
+    notify.success('Booking confirmed')
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Failed to confirm')
+    notify.error('Failed to confirm', err?.data?.message)
   } finally {
     loadingRowId.value = null
     fetchData()
@@ -68,9 +68,9 @@ async function handleDecline(id: string) {
     stats.pending = Math.max(0, stats.pending - 1)
     expandedDeclineId.value = null
     declineReason.value = ''
-    toast.success('Booking declined')
+    notify.success('Booking declined')
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Failed to decline')
+    notify.error('Failed to decline', err?.data?.message)
   } finally {
     loadingRowId.value = null
     fetchData();

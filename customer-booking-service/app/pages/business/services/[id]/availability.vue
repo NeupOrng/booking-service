@@ -4,7 +4,6 @@ import {
   Sun, Moon, Calendar, Briefcase, Info, Loader2,
 } from 'lucide-vue-next'
 import { format, addMonths, startOfMonth, getDaysInMonth, getDay } from 'date-fns'
-import { toast } from 'vue-sonner'
 import type { AvailabilityRule, AvailabilityBlock, AvailabilitySlot } from '~/types'
 
 definePageMeta({ middleware: ['auth', 'role'], layout: 'business' })
@@ -13,10 +12,11 @@ const route = useRoute()
 const serviceId = route.params.id as string
 
 const {
-  fetchRules, createRule, updateRule, deleteRule,
-  fetchBlocks, createBlock, deleteBlock,
+  fetchRules, createRule,
+  fetchBlocks,
 } = useBusinessOwner()
 const { fetchAvailability, fetchService } = useBooking()
+const { notify } = useNotify()
 
 // ─── service ──────────────────────────────────────────────────────────────────
 const serviceName = ref('Service')
@@ -26,12 +26,12 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const
 
 function toMin(t: string) {
-  const [h, m] = t.split(':').map(Number)
+  const [h = 0, m = 0] = t.split(':').map(Number)
   return h * 60 + m
 }
 
 function fmtTime(t: string) {
-  const [h, m] = t.split(':').map(Number)
+  const [h = 0, m = 0] = t.split(':').map(Number)
   const ap = h >= 12 ? 'pm' : 'am'
   const hh = h % 12 || 12
   return m === 0 ? `${hh}${ap}` : `${hh}:${String(m).padStart(2, '0')}${ap}`
@@ -74,7 +74,7 @@ const todayDayName = computed<string | null>(() => {
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday.value)
     d.setDate(monday.value.getDate() + i)
-    if (d.getTime() === now.getTime()) return DAYS[i]
+    if (d.getTime() === now.getTime()) return DAYS[i] ?? null
   }
   return null
 })
@@ -221,10 +221,10 @@ async function applyTemplate(t: typeof TEMPLATES[number]) {
         rules.value.push(created)
       }
     }
-    toast.success(`${t.label} template applied`)
+    notify.success(`${t.label} template applied`)
     refreshPreview()
   } catch (err: any) {
-    toast.error(err?.data?.message ?? 'Failed to apply template')
+    notify.error('Failed to apply template', err?.data?.message)
   } finally {
     applyingTemplate.value = false
   }
@@ -296,7 +296,7 @@ async function loadAll() {
     rules.value = r
     blocks.value = b
   } catch {
-    toast.error('Failed to load availability')
+    notify.error('Failed to load availability')
   } finally {
     rulesLoading.value = false
     refreshPreview()
@@ -329,7 +329,7 @@ onMounted(loadAll)
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <button
-          @click="toast.info('All rules already recur weekly.')"
+          @click="notify.info('All rules already recur weekly.')"
           class="text-xs font-medium px-3 py-1.5 rounded-lg bg-card border border-border text-foreground inline-flex items-center gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
         >
           <Copy class="w-3 h-3" /> Copy week
@@ -378,7 +378,7 @@ onMounted(loadAll)
             <button
               class="absolute top-2 right-2 w-5 h-5 rounded-md text-muted-foreground hidden group-hover:flex items-center justify-center hover:bg-muted hover:text-foreground transition-colors z-10"
               title="Copy day"
-              @click.stop="toast.info('Copy day coming soon.')"
+              @click.stop="notify.info('Copy day coming soon.')"
             >
               <Copy class="w-3 h-3" />
             </button>

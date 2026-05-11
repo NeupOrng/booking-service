@@ -19,4 +19,5 @@ __exportStar(require("./schemas/files.schema"), exports);
 __exportStar(require("./schemas/categories.schema"), exports);
 __exportStar(require("./schemas/services.schema"), exports);
 __exportStar(require("./schemas/bookings.schema"), exports);
+__exportStar(require("./schemas/reviews.schema"), exports);
 //# sourceMappingURL=schema.js.map

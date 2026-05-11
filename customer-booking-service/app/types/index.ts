@@ -98,3 +98,18 @@ export interface BookingStats {
   completed: number
   cancelled: number
 }
+
+export interface Review {
+  id: string
+  serviceId: string
+  rating: number
+  comment: string | null
+  reviewerInitials: string
+  reviewerName: string
+  createdAt: string
+}
+
+export interface ReviewStats {
+  avgRating: number
+  reviewCount: number
+}

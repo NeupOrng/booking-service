@@ -4,7 +4,7 @@ import { CustomerBookingListQueryDto, BusinessBookingListQueryDto } from './dto/
 export declare class BookingsRepository {
     private readonly db;
     constructor(db: DatabaseService);
-    create(data: Omit<InsertBooking, 'id' | 'createdAt' | 'updatedAt'>): Promise<SelectBooking>;
+    create(data: Omit<InsertBooking, 'id' | 'createdAt' | 'updatedAt'>): Promise<any | null>;
     writeSlotLockAudit(serviceId: string, slotDate: string, slotTime: string, userId: string, bookingId: string): Promise<void>;
     findById(id: string): Promise<any | null>;
     update(id: string, data: Partial<SelectBooking>): Promise<SelectBooking | null>;
