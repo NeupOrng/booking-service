@@ -44,6 +44,9 @@ export class ServicesRepository {
         if (query.categoryId) {
             conditions.push(eq(services.categoryId, query.categoryId));
         }
+        if (query.businessId) {
+            conditions.push(eq(services.businessId, query.businessId));
+        }
 
         const where = and(...conditions);
 

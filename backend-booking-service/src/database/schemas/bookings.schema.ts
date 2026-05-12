@@ -4,7 +4,8 @@ import { users } from './users.schema';
 import { businesses, services } from './services.schema';
 
 // @ts-ignore: TS2883
-export const bookings = pgTable('bookings', {
+export const 
+bookings = pgTable('bookings', {
   id:               uuid('id').primaryKey().defaultRandom(),
   serviceId:        uuid('service_id').notNull().references(() => services.id, { onDelete: 'restrict' }),
   customerId:       uuid('customer_id').notNull().references(() => users.id, { onDelete: 'restrict' }),

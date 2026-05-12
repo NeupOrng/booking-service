@@ -28,6 +28,12 @@ __decorate([
     __metadata("design:type", String)
 ], ServiceListQueryDto.prototype, "categoryId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by business UUID' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], ServiceListQueryDto.prototype, "businessId", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({ enum: ['price_asc', 'price_desc', 'duration_asc', 'soonest'] }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsIn)(['price_asc', 'price_desc', 'duration_asc', 'soonest']),

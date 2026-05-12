@@ -84,9 +84,9 @@ export declare class AuthController {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            ownerId: string;
             slug: string;
             description: string;
-            ownerId: string;
             address: string;
             logoUrl: string;
             phone: string;

@@ -5,6 +5,7 @@ import { useFormatters } from '~/composables/useFormatters'
 
 const props = defineProps<{ service: Service }>()
 
+const router = useRouter()
 const { formatCurrency, formatNextSlot } = useFormatters()
 
 const nextSlot = computed(() => formatNextSlot(props.service.next_available_slot))
@@ -29,7 +30,11 @@ function getCategoryPlaceholder(slug: string): string {
 </script>
 
 <template>
-  <NuxtLink :to="`/services/${service.id}`" class="block h-full group">
+  <!-- Outer div handles card click; inner business link uses @click.stop to prevent card nav -->
+  <div
+    class="block h-full group cursor-pointer"
+    @click="router.push(`/services/${service.id}`)"
+  >
     <div class="h-full bg-card rounded-2xl overflow-hidden border border-border flex flex-col transition-all duration-200 shadow-sm group-hover:-translate-y-1.5 group-hover:shadow-xl">
       <!-- Cover Image -->
       <div class="relative w-full h-44 shrink-0 overflow-hidden">
@@ -57,12 +62,20 @@ function getCategoryPlaceholder(slug: string): string {
       <!-- Card Body -->
       <div class="p-4 flex flex-col gap-1 flex-1">
         <h3 class="font-semibold text-base leading-snug text-foreground line-clamp-2">{{ service.name }}</h3>
-        <p class="text-sm text-muted-foreground">{{ service.business.name }}</p>
+
+        <!-- Business name — clickable, stops card propagation -->
+        <NuxtLink
+          :to="`/businesses/${service.business.id}`"
+          class="text-sm text-muted-foreground hover:text-primary transition-colors w-fit"
+          @click.stop
+        >
+          {{ service.business.name }}
+        </NuxtLink>
 
         <!-- Rating row -->
         <div class="flex items-center gap-1 mt-1">
           <Star class="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span class="text-xs font-medium text-foreground">{{ service.avg_rating ?? '5.0' }}</span>
+          <span class="text-xs font-medium text-foreground">{{ service.avg_rating ?? '—' }}</span>
           <span class="text-xs text-muted-foreground">({{ service.review_count ?? 0 }})</span>
         </div>
 
@@ -81,5 +94,5 @@ function getCategoryPlaceholder(slug: string): string {
         </div>
       </div>
     </div>
-  </NuxtLink>
+  </div>
 </template>

@@ -9,6 +9,9 @@ export class ServiceListQueryDto {
   @ApiPropertyOptional({ description: 'Filter by category UUID' })
   @IsOptional() @IsUUID() categoryId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by business UUID' })
+  @IsOptional() @IsUUID() businessId?: string;
+
   @ApiPropertyOptional({ enum: ['price_asc', 'price_desc', 'duration_asc', 'soonest'] })
   @IsOptional() @IsIn(['price_asc', 'price_desc', 'duration_asc', 'soonest']) sort?: string;
 

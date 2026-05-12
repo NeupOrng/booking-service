@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Availability — Redesign Explorations</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="variations.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { background: #eef1f5; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="../../ui_kits/listeobook/Atoms.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="V1.jsx"></script>
+<script type="text/babel" src="V2.jsx"></script>
+<script type="text/babel" src="V3.jsx"></script>
+<script type="text/babel" src="V4.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+  const { useState, useEffect } = React;
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "density": "compact",
+    "accent": "#1fa8be",
+    "showWeekends": true,
+    "showPreview": true
+  }/*EDITMODE-END*/;
+
+  function App() {
+    const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+
+    useEffect(() => {
+      const refresh = () => window.lucide && window.lucide.createIcons();
+      refresh();
+      const t = setInterval(refresh, 600);
+      return () => clearInterval(t);
+    }, []);
+
+    // accent override
+    useEffect(() => {
+      document.documentElement.style.setProperty('--primary', tweaks.accent);
+    }, [tweaks.accent]);
+
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    return (
+      <>
+        <DesignCanvas
+          title="Availability — redesigned"
+          subtitle="Four mental models for the merchant's schedule editor. Brand: ListeoBook teal. Tweaks panel toggles density, accent, and weekend visibility."
+        >
+          <DCSection id="explorations" title="Four directions">
+            <DCArtboard id="v1" label="V1 — Shop hours (refined day columns)" width={1280} height={820}>
+              <div className="av-page"><window.V1ShopHours tweaks={tweaks} /></div>
+            </DCArtboard>
+            <DCArtboard id="v2" label="V2 — Time canvas (paint your week)" width={1280} height={1100}>
+              <div className="av-page"><window.V2TimeCanvas tweaks={tweaks} /></div>
+            </DCArtboard>
+            <DCArtboard id="v3" label="V3 — Recipe cards (rules as sentences)" width={1100} height={1200}>
+              <div className="av-page"><window.V3Recipes tweaks={tweaks} /></div>
+            </DCArtboard>
+            <DCArtboard id="v4" label="V4 — Calendar of truth (unified)" width={1400} height={1000}>
+              <div className="av-page"><window.V4Calendar tweaks={tweaks} /></div>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+
+        <window.TweaksPanel title="Tweaks">
+          <window.TweakSection label="Density" />
+          <window.TweakRadio
+            label="Spacing"
+            value={tweaks.density}
+            options={['compact', 'default', 'roomy']}
+            onChange={v => setTweak('density', v)}
+          />
+          <window.TweakSection label="Theme" />
+          <window.TweakColor label="Accent" value={tweaks.accent} onChange={v => setTweak('accent', v)} />
+          <window.TweakSection label="Layout" />
+          <window.TweakToggle label="Show weekends" value={tweaks.showWeekends} onChange={v => setTweak('showWeekends', v)} />
+          <window.TweakToggle label="Show preview rail" value={tweaks.showPreview} onChange={v => setTweak('showPreview', v)} />
+        </window.TweaksPanel>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

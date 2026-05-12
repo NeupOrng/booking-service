@@ -130,6 +130,7 @@ export function useBooking() {
     async function fetchServices(params: {
         q?: string;
         categoryId?: string;
+        businessId?: string;
         sort?: string;
         page?: number;
         perPage?: number;
@@ -148,9 +149,8 @@ export function useBooking() {
             {
                 query: {
                     ...(params.q ? { q: params.q } : {}),
-                    ...(params.categoryId
-                        ? { categoryId: params.categoryId }
-                        : {}),
+                    ...(params.categoryId ? { categoryId: params.categoryId } : {}),
+                    ...(params.businessId ? { businessId: params.businessId } : {}),
                     ...(params.sort ? { sort: params.sort } : {}),
                     page: params.page ?? 1,
                     perPage: params.perPage ?? 12,

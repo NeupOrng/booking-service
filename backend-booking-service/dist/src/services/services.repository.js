@@ -30,6 +30,9 @@ let ServicesRepository = class ServicesRepository {
         if (query.categoryId) {
             conditions.push((0, drizzle_orm_1.eq)(schema_1.services.categoryId, query.categoryId));
         }
+        if (query.businessId) {
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.services.businessId, query.businessId));
+        }
         const where = (0, drizzle_orm_1.and)(...conditions);
         const orderBy = (() => {
             switch (query.sort) {

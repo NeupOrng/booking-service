@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Service Detail — Redesign</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* page chrome */
+  body { background: #eef1f5; }
+  .sd-shell { padding: 28px; display: flex; flex-direction: column; gap: 28px; }
+  .sd-intro { max-width: 720px; }
+  .sd-intro h1 { font: 700 22px/1.2 Inter; letter-spacing: -.02em; margin: 0 0 6px; }
+  .sd-intro p { font: 400 13px/1.5 Inter; color: var(--fg-muted); margin: 0; }
+  .sd-eyebrow { font: 600 11px/1 Inter; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; }
+
+  /* Mock page-level styles (mimic Tailwind tokens used in [id].vue) */
+  .sd { background: var(--bg); color: var(--fg); font-family: Inter, system-ui; }
+  .sd-breadcrumb { background: #fff; border-bottom: 1px solid var(--border); }
+  .sd-breadcrumb-inner { padding: 12px 16px; }
+  .sd-back { display:inline-flex; align-items:center; gap: 6px; font: 500 13px/1 Inter; color: var(--fg-muted); }
+  .sd-back:hover { color: var(--primary); }
+
+  /* Cover */
+  .sd-cover { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden;
+    background: linear-gradient(135deg, #5dc6d3, #1fa8be); }
+  .sd-cover .cat { position:absolute; top: 16px; left: 16px; background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4;
+    font: 600 11px/1 Inter; padding: 6px 12px; border-radius: 9999px; }
+  .sd-cover .price-pill { position:absolute; bottom: 16px; right: 16px; background: rgba(0,0,0,.55); color: #fff;
+    backdrop-filter: blur(8px); padding: 8px 14px; border-radius: 12px; font: 700 14px/1 Inter; display:flex; align-items:center; gap:8px; }
+  .sd-cover .price-pill small { font: 500 11px/1 Inter; opacity:.7; }
+
+  .sd-title-row h1 { font: 700 24px/1.15 Inter; letter-spacing: -.02em; margin: 0 0 8px; }
+  .sd-title-row .meta { display:flex; flex-wrap: wrap; gap: 12px; font: 500 13px/1 Inter; color: var(--fg-muted); align-items:center; }
+  .sd-title-row .meta .star { color: #f59e0b; }
+
+  .sd-info-card { display:flex; align-items:center; gap: 14px; padding: 14px; background: #fff;
+    border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); }
+  .sd-avatar { width: 48px; height: 48px; border-radius: 9999px; background: linear-gradient(135deg, #f59e0b, #ef4444); color:#fff;
+    display:flex; align-items:center; justify-content:center; font: 700 16px/1 Inter; flex-shrink: 0; }
+  .sd-info-card .lbl { font: 500 10px/1 Inter; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 3px; }
+  .sd-info-card .name { font: 600 14px/1.2 Inter; }
+  .sd-info-card .sub { font: 400 12px/1.4 Inter; color: var(--fg-muted); margin-top: 2px; }
+
+  .sd-section h2 { font: 700 16px/1.2 Inter; margin: 0 0 10px; }
+  .sd-section p { font: 400 13px/1.55 Inter; color: var(--fg-muted); margin: 0; }
+  .sd-policy { display:flex; gap: 10px; padding: 14px; border: 1px solid rgba(31,168,190,.3); background: var(--accent); border-radius: 12px; }
+  .sd-policy .ic { color: var(--primary); flex-shrink: 0; }
+  .sd-policy .lbl { font: 600 12px/1 Inter; color: var(--primary); margin-bottom: 4px; }
+  .sd-policy .body { font: 400 12px/1.5 Inter; color: rgba(26,32,56,.75); }
+
+  /* === BookingPanel — desktop refresh === */
+  .bp2 { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-card);
+    padding: 20px; display:flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
+  .bp2-head { display:flex; align-items:baseline; justify-content:space-between; gap: 8px; }
+  .bp2-price { font: 800 22px/1 Inter; color: var(--fg); letter-spacing: -.01em; }
+  .bp2-price small { font: 500 11px/1 Inter; color: var(--fg-muted); margin-left: 4px; }
+  .bp2-dur { font: 500 12px/1 Inter; color: var(--fg-muted); display:flex; align-items:center; gap:4px; }
+  .bp2-h3 { font: 600 13px/1 Inter; margin: 0 0 8px; }
+  .bp2-days { display:flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .bp2-day { flex: 0 0 56px; padding: 8px 0; border:1px solid var(--border); border-radius: 10px; background: #fff;
+    text-align:center; cursor: pointer; transition: all .12s; }
+  .bp2-day:hover { border-color: var(--primary); }
+  .bp2-day.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .bp2-day .d { font: 500 9px/1 Inter; letter-spacing: .08em; text-transform: uppercase; opacity:.7; }
+  .bp2-day .n { font: 700 16px/1 Inter; margin-top: 5px; display:block; }
+  .bp2-day.full { background: repeating-linear-gradient(135deg, #fff 0 5px, #f3f4f6 5px 10px); color: var(--fg-muted); }
+
+  .bp2-period-tabs { display:flex; background: var(--muted); border-radius: 9px; padding: 3px; margin-bottom: 8px; }
+  .bp2-period-tab { flex: 1; font: 500 11px/1 Inter; padding: 7px 4px; border-radius: 6px; background: transparent;
+    border: none; cursor:pointer; color: var(--fg-muted); transition: all .15s; }
+  .bp2-period-tab.on { background: #fff; color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+  .bp2-period-tab .count { font: 400 10px/1 Inter; opacity:.7; margin-left: 4px; }
+
+  .bp2-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .bp2-slot { padding: 8px 4px; border: 1px solid var(--border); background: #fff; border-radius: 8px;
+    font: 600 12px/1 Inter; cursor: pointer; transition: all .12s; position: relative; }
+  .bp2-slot:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+  .bp2-slot.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .bp2-slot:disabled { opacity: .35; cursor: not-allowed; }
+  .bp2-slot .left { display:block; font: 500 9px/1 Inter; color: #b45309; margin-top: 3px; }
+  .bp2-slot.on .left { color: rgba(255,255,255,.85); }
+  .bp2-slot.list-style { display:flex; align-items:center; justify-content:space-between; padding: 12px 14px; font-size: 13px; }
+  .bp2-slot.list-style .left { margin-top: 0; }
+
+  .bp2-list { display:flex; flex-direction: column; gap: 6px; }
+  .bp2-summary { background: rgba(31,168,190,.06); border: 1px dashed rgba(31,168,190,.3); border-radius: 10px;
+    padding: 10px 12px; font: 500 12px/1.4 Inter; color: var(--fg); display:flex; align-items:center; gap: 8px; }
+  .bp2-summary b { color: var(--primary); }
+  .bp2-cta { width: 100%; height: 44px; background: var(--primary); color: #fff; border: none; border-radius: 10px;
+    font: 600 14px/1 Inter; cursor: pointer; display:flex; align-items:center; justify-content:center; gap: 8px; transition: background .15s; }
+  .bp2-cta:hover { background: var(--primary-hover); }
+  .bp2-cta:disabled { opacity: .5; cursor: not-allowed; }
+  .bp2-trust { font: 400 11px/1.4 Inter; color: var(--fg-muted); text-align: center; }
+  .bp2-trust b { color: var(--fg); font-weight: 600; }
+
+  /* === Mobile booking — fixed dock + sheet === */
+  .mb-dock { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--border);
+    padding: 12px 16px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 -6px 20px rgba(20,30,60,.08); }
+  .mb-dock .price { font: 800 18px/1 Inter; }
+  .mb-dock .price small { font: 500 11px/1 Inter; color: var(--fg-muted); margin-left: 3px; font-weight: 500; }
+  .mb-dock .sub { font: 500 11px/1.2 Inter; color: var(--fg-muted); margin-top: 3px; display:flex; align-items:center; gap:4px; }
+  .mb-dock .sub .dot { width:6px; height:6px; border-radius:9999px; background: #10b981; }
+  .mb-dock-cta { margin-left: auto; height: 44px; background: var(--primary); color: #fff; border: none; border-radius: 10px;
+    font: 600 13px/1 Inter; padding: 0 18px; display:flex; align-items:center; gap: 6px; }
+
+  /* mobile sheet (shown statically for the artboard) */
+  .mb-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 24px 24px 0 0;
+    padding: 8px 20px 22px; box-shadow: 0 -8px 30px rgba(20,30,60,.18); max-height: 78%; display:flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .mb-sheet .grabber { width: 36px; height: 4px; background: #d1d5db; border-radius: 9999px; margin: 8px auto 6px; }
+  .mb-sheet .head { display:flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .mb-sheet .head h3 { font: 700 18px/1.2 Inter; margin: 0; }
+  .mb-sheet .head .meta { font: 500 12px/1.4 Inter; color: var(--fg-muted); margin-top: 4px; }
+  .mb-sheet .close { width: 32px; height: 32px; border-radius: 9999px; border: none; background: var(--muted); display:flex; align-items:center; justify-content:center; }
+
+  .mb-month-strip { font: 600 11px/1 Inter; color: var(--fg-muted); letter-spacing:.04em; text-transform: uppercase;
+    display:flex; align-items:center; justify-content:space-between; }
+  .mb-month-strip .arrow { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: #fff;
+    display:flex; align-items:center; justify-content:center; color: var(--fg-muted); }
+
+  .mb-listmode { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 2px; }
+  .mb-group h4 { font: 600 11px/1 Inter; color: var(--fg-muted); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 8px;
+    display:flex; align-items:center; gap: 8px; }
+  .mb-group h4 .ic { color: var(--primary); }
+  .mb-group h4 .count { color: var(--fg-muted); font-weight: 500; margin-left: auto; }
+  .mb-pill-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mb-pill { padding: 11px 4px; border: 1px solid var(--border); background: #fff; border-radius: 12px;
+    font: 600 13px/1 Inter; text-align: center; }
+  .mb-pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .mb-pill:disabled, .mb-pill.taken { background: var(--muted); color: var(--fg-muted); opacity: .55; text-decoration: line-through; }
+  .mb-pill .left { display:block; font: 500 9px/1 Inter; color: #b45309; margin-top: 4px; }
+  .mb-pill.on .left { color: rgba(255,255,255,.85); }
+
+  .mb-cta-row { display:flex; gap: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .mb-cta-row .cta { flex: 1; height: 48px; background: var(--primary); color: #fff; border: none; border-radius: 12px;
+    font: 700 15px/1 Inter; display:flex; align-items:center; justify-content:center; gap: 8px; }
+  .mb-cta-row .cta:disabled { opacity: .35; }
+  .mb-cta-row .summary { display:flex; flex-direction: column; align-items: flex-start; justify-content: center; }
+  .mb-cta-row .summary .t1 { font: 700 14px/1 Inter; }
+  .mb-cta-row .summary .t2 { font: 500 11px/1.2 Inter; color: var(--fg-muted); margin-top: 3px; }
+
+  /* bold variation: hero card */
+  .vbold-hero { position: relative; height: 320px; border-radius: 0; overflow:hidden;
+    background: linear-gradient(135deg, hsl(224 45% 18%) 0%, hsl(189 68% 28%) 100%); color: #fff; padding: 28px; display:flex; flex-direction: column; justify-content: flex-end; }
+  .vbold-hero::before { content:''; position: absolute; inset:0; opacity: .12;
+    background: radial-gradient(circle at 18% 30%, white 1.5px, transparent 1.5px) 0 0 / 50px 50px; }
+  .vbold-hero h1 { font: 800 32px/1.1 Inter; letter-spacing: -.02em; margin: 0 0 10px; }
+  .vbold-hero .row { display:flex; gap: 16px; align-items:center; font:500 13px/1 Inter; opacity: .9; }
+  .vbold-hero .row .pill { background: rgba(255,255,255,.16); padding: 5px 10px; border-radius: 9999px; backdrop-filter: blur(6px); }
+
+  .vbold-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; background: #fff;
+    border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .vbold-meta > div { padding: 14px; border-right: 1px solid var(--border); }
+  .vbold-meta > div:last-child { border-right: none; }
+  .vbold-meta .l { font: 500 10px/1 Inter; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); }
+  .vbold-meta .v { font: 700 16px/1.1 Inter; margin-top: 6px; display:flex; align-items:center; gap: 5px; }
+  .vbold-meta .v .star { color: #f59e0b; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* Icon shim */
+const Ic = ({ n, s = 14, c }) => <i data-lucide={n} style={{ width: s, height: s, color: c || 'currentColor', display:'inline-flex' }} />;
+
+/* === Shared content === */
+const SERVICE = {
+  name: 'Deep Tissue Massage',
+  business: 'Serenity Spa & Wellness',
+  business_about: 'Boutique wellness studio in Mission Bay since 2018',
+  category: 'Wellness',
+  price: '$120',
+  duration: 60,
+  rating: 4.8,
+  reviews: 47,
+  address: '224 Harrison St, San Francisco',
+  next: 'Today, 3:30 pm',
+};
+
+const DAYS = (() => {
+  const labels = ['Tue','Wed','Thu','Fri','Sat','Sun','Mon'];
+  return labels.map((d, i) => ({ d, n: 12 + i, full: i === 4 }));
+})();
+
+const SLOT_GROUPS = {
+  morning:   [{ t: '9:00 am' }, { t: '9:30 am', taken: true }, { t: '10:00 am' }, { t: '10:30 am' }, { t: '11:00 am', low: 2 }, { t: '11:30 am' }],
+  afternoon: [{ t: '12:00 pm' }, { t: '1:00 pm' }, { t: '2:00 pm', taken: true }, { t: '3:30 pm', selected: true }, { t: '4:00 pm', low: 1 }, { t: '4:30 pm' }],
+  evening:   [{ t: '5:00 pm' }, { t: '5:30 pm' }, { t: '6:00 pm', taken: true }, { t: '6:30 pm' }, { t: '7:00 pm' }],
+};
+
+const PERIODS = [
+  { id: 'morning',   label: 'Morning',   ic: 'sunrise', count: 5 },
+  { id: 'afternoon', label: 'Afternoon', ic: 'sun',     count: 5 },
+  { id: 'evening',   label: 'Evening',   ic: 'moon',    count: 4 },
+];
+
+/* === Refreshed BookingPanel — desktop === */
+function BookingPanelDesktop({ density = 'grid', selectedPeriod = 'afternoon' }) {
+  const slots = SLOT_GROUPS[selectedPeriod];
+  return (
+    <div className="bp2">
+      <div className="bp2-head">
+        <div>
+          <div className="bp2-price">{SERVICE.price}<small>per session</small></div>
+          <div className="bp2-dur" style={{ marginTop: 4 }}><Ic n="clock" s={12} /> {SERVICE.duration} min</div>
+        </div>
+        <span style={{ font: '600 11px/1 Inter', color: '#10b981', display:'flex', alignItems:'center', gap: 4 }}>
+          <span style={{ width:6, height:6, borderRadius:'9999px', background:'#10b981' }} /> Available today
+        </span>
+      </div>
+
+      <div>
+        <h4 className="bp2-h3">Pick a date</h4>
+        <div className="bp2-days">
+          {DAYS.map((d, i) => (
+            <button key={i} className={`bp2-day ${i === 0 ? 'on' : ''} ${d.full ? 'full' : ''}`}>
+              <span className="d">{d.d}</span><span className="n">{d.n}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="bp2-h3">Available times</h4>
+        <div className="bp2-period-tabs">
+          {PERIODS.map(p => (
+            <button key={p.id} className={`bp2-period-tab ${p.id === selectedPeriod ? 'on' : ''}`}>
+              {p.label}<span className="count">{p.count}</span>
+            </button>
+          ))}
+        </div>
+        {density === 'list' ? (
+          <div className="bp2-list">
+            {slots.map((s, i) => (
+              <button key={i} className={`bp2-slot list-style ${s.selected ? 'on' : ''}`} disabled={s.taken}>
+                <span>{s.t}</span>
+                {s.low && <span className="left">{s.low} left</span>}
+                {s.taken && <span style={{ font:'500 10px/1 Inter', opacity:.7 }}>Booked</span>}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="bp2-slots">
+            {slots.map((s, i) => (
+              <button key={i} className={`bp2-slot ${s.selected ? 'on' : ''}`} disabled={s.taken}>
+                {s.t}{s.low && <span className="left">{s.low} left</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bp2-summary">
+        <Ic n="calendar-check" s={14} c="#1fa8be" />
+        <span>Booking for <b>Sat, Jun 14 · 3:30 pm</b></span>
+      </div>
+
+      <button className="bp2-cta">
+        Continue to booking <Ic n="arrow-right" s={14} />
+      </button>
+      <div className="bp2-trust">
+        <b>Free cancellation</b> up to 24 hours before
+      </div>
+    </div>
+  );
+}
+
+/* === Mobile sheet (always-open static rendering) === */
+function MobileSheet({ density = 'grouped' }) {
+  return (
+    <div className="mb-sheet">
+      <div className="grabber" />
+      <div className="head">
+        <div>
+          <h3>Pick a time</h3>
+          <div className="meta">{SERVICE.name} · {SERVICE.duration} min</div>
+        </div>
+        <button className="close"><Ic n="x" s={16} /></button>
+      </div>
+
+      <div className="mb-month-strip">
+        <button className="arrow"><Ic n="chevron-left" s={14} /></button>
+        <span>June 2026</span>
+        <button className="arrow"><Ic n="chevron-right" s={14} /></button>
+      </div>
+
+      <div className="bp2-days" style={{ overflowX:'auto' }}>
+        {DAYS.map((d, i) => (
+          <button key={i} className={`bp2-day ${i === 0 ? 'on' : ''} ${d.full ? 'full' : ''}`} style={{ flex: '0 0 52px' }}>
+            <span className="d">{d.d}</span><span className="n">{d.n}</span>
+          </button>
+        ))}
+      </div>
+
+      {density === 'grouped' ? (
+        <div className="mb-listmode">
+          {PERIODS.map(p => (
+            <div key={p.id} className="mb-group">
+              <h4><Ic n={p.ic} s={12} className="ic" /> {p.label}<span className="count">{SLOT_GROUPS[p.id].length} slots</span></h4>
+              <div className="mb-pill-grid">
+                {SLOT_GROUPS[p.id].map((s, i) => (
+                  <button key={i} className={`mb-pill ${s.selected ? 'on' : ''} ${s.taken ? 'taken' : ''}`} disabled={s.taken}>
+                    {s.t}{s.low && <span className="left">{s.low} left</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-listmode">
+          <div className="mb-pill-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {[...SLOT_GROUPS.morning, ...SLOT_GROUPS.afternoon, ...SLOT_GROUPS.evening].map((s, i) => (
+              <button key={i} className={`mb-pill ${s.selected ? 'on' : ''} ${s.taken ? 'taken' : ''}`} disabled={s.taken}>
+                {s.t}{s.low && <span className="left">{s.low} left</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-cta-row">
+        <div className="summary">
+          <span className="t1">{SERVICE.price} · 3:30 pm</span>
+          <span className="t2">Sat, Jun 14 · Free cancellation</span>
+        </div>
+        <button className="cta">Continue <Ic n="arrow-right" s={16} /></button>
+      </div>
+    </div>
+  );
+}
+
+/* === Page wrapper — conservative (kept layout, refreshed) === */
+function ConservativePage({ density }) {
+  return (
+    <div className="sd" style={{ width: 1100 }}>
+      <div className="sd-breadcrumb"><div className="sd-breadcrumb-inner">
+        <a className="sd-back" href="#"><Ic n="chevron-left" s={14} /> Back to Services</a>
+      </div></div>
+      <div style={{ padding: '24px 32px', display: 'grid', gridTemplateColumns: '1fr 360px', gap: 32 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap: 24 }}>
+          <div className="sd-cover">
+            <span className="cat">{SERVICE.category}</span>
+            <div className="price-pill">{SERVICE.price}<small>/ session</small></div>
+          </div>
+          <div className="sd-title-row">
+            <h1>{SERVICE.name}</h1>
+            <div className="meta">
+              <span><span className="star">★</span> <b style={{ color:'var(--fg)' }}>{SERVICE.rating}</b> ({SERVICE.reviews})</span>
+              <span style={{ display:'flex', gap: 5, alignItems:'center' }}><Ic n="map-pin" s={13} /> {SERVICE.address}</span>
+              <span style={{ display:'flex', gap: 5, alignItems:'center' }}><Ic n="clock" s={13} /> {SERVICE.duration} min</span>
+            </div>
+          </div>
+          <a className="sd-info-card" href="#">
+            <div className="sd-avatar">SS</div>
+            <div style={{ flex: 1 }}>
+              <div className="lbl">Provided by</div>
+              <div className="name">{SERVICE.business}</div>
+              <div className="sub">{SERVICE.business_about}</div>
+            </div>
+            <span style={{ color:'var(--primary)', font:'500 12px/1 Inter' }}>View all →</span>
+          </a>
+          <div className="sd-section">
+            <h2>About this service</h2>
+            <p>A therapeutic deep-tissue treatment targeting muscle tension and chronic knots. Sustained pressure with slow strokes reaches deeper layers of muscle and connective tissue. Ideal for athletes, desk workers, and anyone carrying tension in the back, neck, or shoulders.</p>
+          </div>
+          <div className="sd-policy">
+            <Ic n="info" s={16} className="ic" />
+            <div>
+              <div className="lbl">Cancellation Policy</div>
+              <div className="body">Free cancellation up to 24 hours before your appointment. After that, 50% of the service price applies.</div>
+            </div>
+          </div>
+        </div>
+        <div><BookingPanelDesktop density={density} /></div>
+      </div>
+    </div>
+  );
+}
+
+/* === Page wrapper — bold (immersive hero) === */
+function BoldPage({ density }) {
+  return (
+    <div className="sd" style={{ width: 1100 }}>
+      <div className="vbold-hero">
+        <span className="cat" style={{ position:'absolute', top: 24, left: 28, background:'rgba(255,255,255,.18)', color:'#fff', border:'1px solid rgba(255,255,255,.3)', font:'600 11px/1 Inter', padding:'6px 12px', borderRadius:'9999px', backdropFilter:'blur(6px)' }}>{SERVICE.category}</span>
+          <a href="#" style={{ position:'absolute', top: 24, right: 28, color:'rgba(255,255,255,.85)', display:'inline-flex', alignItems:'center', gap:6, font: '500 13px/1 Inter' }}>
+            <Ic n="chevron-left" s={14} /> Back to Services
+          </a>
+          <div style={{ position: 'relative' }}>
+            <h1>{SERVICE.name}</h1>
+            <div className="row">
+              <span className="pill" style={{ display:'flex', alignItems:'center', gap:5 }}><Ic n="star" s={13} c="#fbbf24" /> {SERVICE.rating} · {SERVICE.reviews} reviews</span>
+              <span className="pill" style={{ display:'flex', alignItems:'center', gap:5 }}><Ic n="map-pin" s={13} /> {SERVICE.business}</span>
+              <span className="pill" style={{ display:'flex', alignItems:'center', gap:5 }}><Ic n="clock" s={13} /> {SERVICE.duration} min</span>
+            </div>
+          </div>
+      </div>
+      <div style={{ padding: '24px 32px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: 32 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap: 20 }}>
+          <div className="vbold-meta">
+            <div><div className="l">Next available</div><div className="v" style={{ color: '#10b981' }}><span style={{ width:8, height:8, borderRadius:'9999px', background:'#10b981' }} />Today, 3:30 pm</div></div>
+            <div><div className="l">Starting at</div><div className="v">{SERVICE.price}</div></div>
+            <div><div className="l">Rating</div><div className="v"><span className="star">★</span> {SERVICE.rating} <small style={{ font:'500 11px/1 Inter', color:'var(--fg-muted)', marginLeft: 4 }}>· {SERVICE.reviews}</small></div></div>
+          </div>
+          <div className="sd-section">
+            <h2>About this service</h2>
+            <p>A therapeutic deep-tissue treatment targeting muscle tension and chronic knots. Sustained pressure with slow strokes reaches deeper layers of muscle and connective tissue. Ideal for athletes, desk workers, and anyone carrying tension in the back, neck, or shoulders.</p>
+          </div>
+          <a className="sd-info-card" href="#">
+            <div className="sd-avatar">SS</div>
+            <div style={{ flex: 1 }}>
+              <div className="lbl">Provided by</div>
+              <div className="name">{SERVICE.business}</div>
+              <div className="sub">{SERVICE.business_about}</div>
+            </div>
+            <span style={{ color:'var(--primary)', font:'500 12px/1 Inter' }}>View all →</span>
+          </a>
+          <div className="sd-policy">
+            <Ic n="info" s={16} className="ic" />
+            <div>
+              <div className="lbl">Cancellation Policy</div>
+              <div className="body">Free cancellation up to 24 hours before your appointment.</div>
+            </div>
+          </div>
+        </div>
+        <div><BookingPanelDesktop density={density} /></div>
+      </div>
+    </div>
+  );
+}
+
+/* === Mobile artboard (iPhone frame) === */
+function MobileArtboard({ state = 'dock', density = 'grouped' }) {
+  return (
+    <IOSDevice width={390} height={844}>
+      <div style={{ height: '100%', position: 'relative', background: 'var(--bg)', overflow: 'hidden' }}>
+        {/* Scrollable content underneath */}
+        <div style={{ overflowY: 'auto', height: '100%', padding: '0 0 120px' }}>
+          <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', background:'#fff' }}>
+            <a className="sd-back" href="#"><Ic n="chevron-left" s={14} /> Back</a>
+          </div>
+          <div style={{ padding: 16, display:'flex', flexDirection:'column', gap: 18 }}>
+            <div className="sd-cover" style={{ aspectRatio: 'unset', height: 180 }}>
+              <span className="cat">{SERVICE.category}</span>
+              <div className="price-pill" style={{ padding: '6px 11px', fontSize: 13 }}>{SERVICE.price}<small>/session</small></div>
+            </div>
+            <div className="sd-title-row">
+              <h1 style={{ fontSize: 22 }}>{SERVICE.name}</h1>
+              <div className="meta" style={{ fontSize: 12, gap: 10 }}>
+                <span><span className="star">★</span> <b style={{ color:'var(--fg)' }}>{SERVICE.rating}</b> ({SERVICE.reviews})</span>
+                <span style={{ display:'flex', gap: 4, alignItems:'center' }}><Ic n="clock" s={12} /> {SERVICE.duration}m</span>
+              </div>
+            </div>
+            <a className="sd-info-card" href="#" style={{ padding: 12 }}>
+              <div className="sd-avatar" style={{ width: 40, height: 40, fontSize: 14 }}>SS</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="lbl">Provided by</div>
+                <div className="name" style={{ fontSize: 13 }}>{SERVICE.business}</div>
+              </div>
+            </a>
+            <div className="sd-section">
+              <h2 style={{ fontSize: 15 }}>About</h2>
+              <p style={{ fontSize: 12.5 }}>Therapeutic deep-tissue treatment targeting muscle tension and chronic knots. Sustained pressure with slow strokes reaches deeper layers of muscle and connective tissue.</p>
+            </div>
+            <div className="sd-policy" style={{ padding: 12 }}>
+              <Ic n="info" s={14} className="ic" />
+              <div>
+                <div className="lbl">Cancellation Policy</div>
+                <div className="body" style={{ fontSize: 11.5 }}>Free cancellation up to 24 hours before.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Either the dock or the sheet — sheet covers dock when open */}
+        {state === 'dock' ? (
+          <div className="mb-dock">
+            <div>
+              <div className="price">{SERVICE.price}<small>/session</small></div>
+              <div className="sub"><span className="dot" /> Next: 3:30 pm today</div>
+            </div>
+            <button className="mb-dock-cta">Pick a time <Ic n="arrow-right" s={14} /></button>
+          </div>
+        ) : (
+          <>
+            <div style={{ position:'absolute', inset: 0, background: 'rgba(20,30,60,.4)' }} />
+            <MobileSheet density={density} />
+          </>
+        )}
+      </div>
+    </IOSDevice>
+  );
+}
+
+/* === Top-level app === */
+function App() {
+  useEffect(() => { if (window.lucide) lucide.createIcons(); });
+  const { DesignCanvas, DCSection, DCArtboard } = window;
+  return (
+    <DesignCanvas
+      title="Service detail — redesigned"
+      subtitle="Conservative refresh and a bolder hero variant. Mobile uses a sticky bottom dock that opens a proper sheet picker (today's Sheet trigger is empty and doesn't open). Slot picker groups times by Morning / Afternoon / Evening."
+    >
+      <DCSection id="mobile" title="Mobile — the broken-on-mobile fix">
+        <DCArtboard id="mb-dock" label="1 — Dock (resting state)" width={420} height={920}>
+          <MobileArtboard state="dock" />
+        </DCArtboard>
+        <DCArtboard id="mb-sheet" label="2 — Sheet open (grouped slots)" width={420} height={920}>
+          <MobileArtboard state="sheet" density="grouped" />
+        </DCArtboard>
+        <DCArtboard id="mb-sheet-flat" label="3 — Sheet open (flat grid)" width={420} height={920}>
+          <MobileArtboard state="sheet" density="flat" />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="desktop" title="Desktop — page redesign">
+        <DCArtboard id="conservative" label="A — Conservative refresh (keep layout)" width={1180} height={1100}>
+          <ConservativePage density="grid" />
+        </DCArtboard>
+        <DCArtboard id="bold" label="B — Bold hero variant" width={1180} height={1100}>
+          <BoldPage density="grid" />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="picker" title="BookingPanel picker — slot density options">
+        <DCArtboard id="grid" label="Grid (3-col, current)" width={420} height={620}>
+          <div style={{ width: 360, padding: 18 }}><BookingPanelDesktop density="grid" /></div>
+        </DCArtboard>
+        <DCArtboard id="list" label="List (bigger touch targets)" width={420} height={620}>
+          <div style={{ width: 360, padding: 18 }}><BookingPanelDesktop density="list" /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
