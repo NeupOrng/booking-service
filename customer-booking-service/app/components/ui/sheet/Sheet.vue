@@ -5,6 +5,8 @@ import { DialogRoot, useForwardPropsEmits } from "reka-ui"
 const props = defineProps<DialogRootProps>()
 const emits = defineEmits<DialogRootEmits>()
 
+console.log('props', props)
+
 const forwarded = useForwardPropsEmits(props, emits)
 </script>
 

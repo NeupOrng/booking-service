@@ -49,21 +49,27 @@ const monthStripLabel = computed(() => format(days.value[3]?.date ?? new Date(),
 // ── Slot state ────────────────────────────────────────────────────────────────
 const selectedDate = ref(format(new Date(), 'yyyy-MM-dd'))
 const selectedTime = ref<string | null>(null)
-const slots = ref<AvailabilitySlot[]>([])
-const loadingSlots = ref(false)
 const activePeriod = ref<PeriodId>('morning')
 const sheetOpen = ref(false)
 
+// All slot data lives here — fetched once per week, keyed by ISO date
+const slotCache = ref(new Map<string, AvailabilitySlot[]>())
+const weekLoading = ref(false)
+
+// Reactive derivations from cache — no extra refs needed
+const slots = computed<AvailabilitySlot[]>(() => slotCache.value.get(selectedDate.value) ?? [])
+const loadingSlots = computed(() => weekLoading.value && !slotCache.value.has(selectedDate.value))
+
 const groupedSlots = computed(() => ({
-  morning: slots.value.filter(s => s.time < '12:00'),
+  morning:   slots.value.filter(s => s.time < '12:00'),
   afternoon: slots.value.filter(s => s.time >= '12:00' && s.time < '17:00'),
-  evening: slots.value.filter(s => s.time >= '17:00'),
+  evening:   slots.value.filter(s => s.time >= '17:00'),
 }))
 
 const periodCounts = computed(() => ({
-  morning: groupedSlots.value.morning.filter(s => s.available).length,
+  morning:   groupedSlots.value.morning.filter(s => s.available).length,
   afternoon: groupedSlots.value.afternoon.filter(s => s.available).length,
-  evening: groupedSlots.value.evening.filter(s => s.available).length,
+  evening:   groupedSlots.value.evening.filter(s => s.available).length,
 }))
 
 function fmtTime(t: string) {
@@ -87,42 +93,49 @@ const hasAvailableToday = computed(() => {
   try { return isToday(parseISO(props.service.next_available_slot)) } catch { return false }
 })
 
-// ── Watchers ──────────────────────────────────────────────────────────────────
-watch(
-  selectedDate,
-  async () => {
-    const prevTime = selectedTime.value
-    loadingSlots.value = true
-    try {
-      const res = await fetchAvailability(props.serviceId, selectedDate.value)
-      slots.value = res.slots
-      if (!res.slots.some(s => s.available)) {
-        soldOutDates.value.add(selectedDate.value)
-      } else {
-        soldOutDates.value.delete(selectedDate.value)
-      }
-      // Keep selected time only if that slot is still available on the new date
-      if (prevTime && !res.slots.find(s => s.time === prevTime && s.available)) {
-        selectedTime.value = null
-      }
-      // Auto-select the period containing the first available slot
-      const first = res.slots.find(s => s.available)
-      if (first) {
-        activePeriod.value = first.time < '12:00' ? 'morning' : first.time < '17:00' ? 'afternoon' : 'evening'
-      }
-    } finally {
-      loadingSlots.value = false
-    }
-  },
-  { immediate: true },
-)
+// ── Data loading ──────────────────────────────────────────────────────────────
+function applyToCache(iso: string, fetched: AvailabilitySlot[]) {
+  slotCache.value.set(iso, fetched)
+  if (!fetched.some(s => s.available)) soldOutDates.value.add(iso)
+  else soldOutDates.value.delete(iso)
+}
 
-// When the week changes, ensure selectedDate is still in view
-watch(weekOffset, () => {
+function syncPeriod() {
+  const first = slots.value.find(s => s.available)
+  if (first) activePeriod.value = first.time < '12:00' ? 'morning' : first.time < '17:00' ? 'afternoon' : 'evening'
+}
+
+async function loadWeek() {
+  weekLoading.value = true
+  const weekDays = days.value
+  try {
+    const results = await Promise.all(
+      weekDays.map(d => fetchAvailability(props.serviceId, d.isoDate)),
+    )
+    results.forEach((res, i) => applyToCache(weekDays[i]!.isoDate, res.slots))
+  } finally {
+    weekLoading.value = false
+  }
+  syncPeriod()
+}
+
+// Day switch: clear time if no longer available, re-sync period tab
+watch(selectedDate, () => {
+  if (selectedTime.value && !slots.value.find(s => s.time === selectedTime.value && s.available)) {
+    selectedTime.value = null
+  }
+  syncPeriod()
+})
+
+// Week navigation: reset date to first day of new week, then fetch
+watch(weekOffset, async () => {
   if (!days.value.find(d => d.isoDate === selectedDate.value)) {
     selectedDate.value = days.value[0].isoDate
   }
+  await loadWeek()
 })
+
+onMounted(loadWeek)
 
 // ── Proceed ───────────────────────────────────────────────────────────────────
 function proceed() {
