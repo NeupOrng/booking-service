@@ -1,0 +1,35 @@
+info:
+  name: Submit Login Flow
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/kratos/login?flow={{kratos-login-flow-id}}"
+  params:
+    - name: flow
+      value: "{{kratos-login-flow-id}}"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "method": "password",
+        "identifier": "neuporng123@gmail.com",
+        "password": "P@$$w0rd120320"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+
+        bru.setEnvVar("kratos-login-session-token", response.session_token)
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -2,6 +2,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
@@ -12,6 +13,7 @@ async function bootstrap() {
   // the OAuth state param in req.session before the redirect to Google.
   // saveUninitialized: true is required so the session is persisted even for
   // new (unauthenticated) requests, allowing the state to survive the redirect.
+  app.use(cookieParser());
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'dev-session-secret',
@@ -25,7 +27,7 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Token'],
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));

@@ -7,11 +7,13 @@ const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const express_session_1 = __importDefault(require("express-session"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const app_module_1 = require("./app.module");
 const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 async function bootstrap() {
     var _a;
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.use((0, cookie_parser_1.default)());
     app.use((0, express_session_1.default)({
         secret: process.env.SESSION_SECRET || 'dev-session-secret',
         resave: false,
@@ -22,7 +24,7 @@ async function bootstrap() {
         origin: process.env.FRONTEND_URL || 'http://localhost:3000',
         credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Token'],
     });
     app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
     app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());

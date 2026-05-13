@@ -17,5 +17,9 @@ declare const _default: () => {
         bucket: string;
         presignExpirySeconds: number;
     };
+    kratos: {
+        publicUrl: string;
+        adminUrl: string;
+    };
 };
 export default _default;

@@ -17,4 +17,8 @@ export default () => ({
     bucket:               process.env.SUPABASE_BUCKET || 'booking-uploads',
     presignExpirySeconds: parseInt(process.env.SUPABASE_PRESIGN_EXPIRY_SECONDS || '3600', 10),
   },
+  kratos: {
+    publicUrl: process.env.KRATOS_PUBLIC_URL || 'http://localhost:4433',
+    adminUrl: process.env.KRATOS_ADMIN_URL || 'http://localhost:4434',
+  },
 });

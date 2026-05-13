@@ -23,6 +23,7 @@ const categories_module_1 = require("./categories/categories.module");
 const services_module_1 = require("./services/services.module");
 const bookings_module_1 = require("./bookings/bookings.module");
 const reviews_module_1 = require("./reviews/reviews.module");
+const kratos_module_1 = require("./kratos/kratos.module");
 const configuration_1 = __importDefault(require("./config/configuration"));
 let AppModule = class AppModule {
 };
@@ -42,6 +43,7 @@ AppModule = __decorate([
             services_module_1.ServicesModule,
             bookings_module_1.BookingsModule,
             reviews_module_1.ReviewsModule,
+            kratos_module_1.KratosModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

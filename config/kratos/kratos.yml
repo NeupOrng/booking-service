@@ -1,0 +1,99 @@
+version: v1.3.1
+
+# ====================== DATABASE ======================
+dsn: postgres://postgres:postgres@postgres:5432/kratos?sslmode=disable
+
+# ====================== SERVER ======================
+serve:
+  public:
+    base_url: http://localhost:4433
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000          # your frontend
+        - http://localhost:5173
+        - http://127.0.0.1:3000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Content-Type
+        - X-Session-Token
+  admin:
+    base_url: http://kratos:4434
+
+# ====================== SELF-SERVICE FLOWS ======================
+selfservice:
+  default_browser_return_url: http://localhost:3000/auth/callback
+
+  flows:
+    logout:
+      after:
+        default_browser_return_url: http://localhost:3000/login
+
+    registration:
+      ui_url: http://localhost:3000/auth/register
+      lifespan: 30m
+
+    login:
+      ui_url: http://localhost:3000/auth/login
+      lifespan: 30m
+
+    verification:
+      ui_url: http://localhost:3000/auth/verify
+      lifespan: 1h
+      after:
+        default_browser_return_url: http://localhost:3000/
+
+    recovery:
+      ui_url: http://localhost:3000/auth/recovery
+      lifespan: 1h
+
+    settings:
+      ui_url: http://localhost:3000/auth/settings
+      lifespan: 30m
+
+  methods:
+    password:
+      enabled: true
+      config:
+        haveibeenpwned_enabled: false
+        min_password_length: 8
+        identifier_similarity_check_enabled: true
+
+    oidc:
+      enabled: true
+      config:
+        providers:
+          - id: google
+            provider: google
+            client_id: ${GOOGLE_CLIENT_ID}
+            client_secret: ${GOOGLE_CLIENT_SECRET}
+            mapper_url: file:///etc/config/kratos/oidc_google_mapper.jsonnet
+
+# ====================== IDENTITY ======================
+identity:
+  default_schema_id: default
+
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+# ====================== COURIER (Emails) ======================
+courier:
+  smtp:
+    connection_uri: smtps://test:test@localhost:1025/?skip_ssl_verify=true   # use MailSlurper or your real SMTP in prod
+    from_address: no-reply@booking.local
+    from_name: Booking Platform
+
+# ====================== LOGGING ======================
+log:
+  level: info
+  format: text
+
+# ====================== OTHER ======================
+dev: true   # enables more verbose output and relaxed security for local dev

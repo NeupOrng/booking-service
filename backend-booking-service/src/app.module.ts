@@ -11,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { ServicesModule } from './services/services.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { KratosModule } from './kratos/kratos.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -28,6 +29,7 @@ import configuration from './config/configuration';
     ServicesModule,
     BookingsModule,
     ReviewsModule,
+    KratosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -47,26 +47,37 @@ services:
       timeout: 5s
       retries: 5
 
-  # api:
-  #   build:
-  #     context: ./backend-booking-service
-  #     dockerfile: Dockerfile
-  #   container_name: booking-api
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     DATABASE_URL: postgres://postgres:postgres@postgres:5432/booking
-  #     REDIS_URL: redis://redis:6379
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   develop:
-  #     watch:
-  #       - action: sync
-  #         path: ./backend-booking-service/src
-  #         target: /app/src
+  # ==================== ORY KRATOS ====================
+
+  kratos-migrate:
+    image: oryd/kratos:v1.3.1
+    container_name: booking-kratos-migrate
+    environment:
+      - DSN=postgres://postgres:postgres@postgres:5432/kratos?sslmode=disable
+    command: migrate -c /etc/config/kratos/kratos.yml sql -e --yes
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+
+  kratos:
+    image: oryd/kratos:v1.3.1
+    container_name: booking-kratos
+    ports:
+      - "4433:4433"   # Public API (for frontend + your backend)
+      - "4434:4434"   # Admin API (for your backend only - keep protected)
+    environment:
+      - DSN=postgres://postgres:postgres@postgres:5432/kratos?sslmode=disable
+      - LOG_LEVEL=info
+    command: serve -c /etc/config/kratos/kratos.yml --dev
+    restart: unless-stopped
+    depends_on:
+      kratos-migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./config/kratos:/etc/config/kratos
 
 volumes:
   postgres_data:
