@@ -26,8 +26,8 @@ runtime:
       code: |-
         const response = res.getBody();
 
-        bru.setEnvVar("access-token", response.accessToken)
-        bru.setEnvVar("refresh-token", response.refreshToken)
+        bru.setEnvVar("customer-access-token", response.accessToken)
+        bru.setEnvVar("customer-refresh-token", response.refreshToken)
 
 settings:
   encodeUrl: true

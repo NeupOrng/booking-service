@@ -1,0 +1,7 @@
+info:
+  name: Step 0 — Register a Kratos test user
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

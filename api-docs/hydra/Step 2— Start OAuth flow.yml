@@ -1,0 +1,52 @@
+info:
+  name: Step 2— Start OAuth flow
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{hydra-public}}/oauth2/auth?client_id=test-client&redirect_uri=http://localhost:9010/callback&response_type=code&scope=openid&scope=profile&scope=email&state=teststate124e"
+  params:
+    - name: client_id
+      value: test-client
+      type: query
+    - name: redirect_uri
+      value: http://localhost:9010/callback
+      type: query
+    - name: response_type
+      value: code
+      type: query
+    - name: scope
+      value: openid
+      type: query
+    - name: scope
+      value: profile
+      type: query
+    - name: scope
+      value: email
+      type: query
+    - name: state
+      value: teststate124e
+      type: query
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const location = res.getHeader('location');
+        console.log('location', location)
+        if (location) {
+          const url = new URL(location);
+          const challenge = url.searchParams.get('login_challenge');
+          bru.setVar('LOGIN_CHALLENGE', challenge);
+          console.log('✓ login_challenge captured:', challenge);
+        } else {
+          console.log('✗ No location header — check that redirects are disabled for this request');
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 0

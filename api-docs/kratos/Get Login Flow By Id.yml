@@ -5,7 +5,11 @@ info:
 
 http:
   method: GET
-  url: "{{base-api-url}}/auth/kratos/login/flow"
+  url: "{{base-api-url}}/auth/kratos/login/flow?id={{kratos-login-flow-id}}"
+  params:
+    - name: id
+      value: "{{kratos-login-flow-id}}"
+      type: query
   auth: inherit
 
 runtime:

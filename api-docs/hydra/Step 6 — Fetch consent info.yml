@@ -1,0 +1,19 @@
+info:
+  name: Step 6 — Fetch consent info
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{base-api-url}}/oauth/consent/info?consent_challenge={{CONSENT_CHALLENGE}}"
+  params:
+    - name: consent_challenge
+      value: "{{CONSENT_CHALLENGE}}"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

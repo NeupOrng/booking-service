@@ -5,7 +5,11 @@ info:
 
 http:
   method: GET
-  url: "{{base-api-url}}/bookings/my"
+  url: "{{base-api-url}}/bookings/my?status=upcoming"
+  params:
+    - name: status
+      value: upcoming
+      type: query
   auth:
     type: bearer
     token: "{{customer-access-token}}"

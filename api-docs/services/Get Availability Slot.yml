@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{base-api-url}}/services/8e4e1b22-63b9-45a9-bbd2-669187ab1c62/availability-rules?date=2026-04-29"
+  url: "{{base-api-url}}/services/8e4e1b22-63b9-45a9-bbd2-669187ab1c62/availability?date=2026-04-29"
   params:
     - name: date
       value: 2026-04-29

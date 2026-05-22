@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "dayOfWeek": "friday",
+        "dayOfWeek": "tuesday",
         "startTime": "09:00",
         "endTime": "17:00",
         "slotDurationMinutes": 60,

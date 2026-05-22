@@ -1,0 +1,38 @@
+info:
+  name: Step 1 — Create a Hydra OAuth client
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{hydra-admin}}/admin/clients"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "client_id": "test-client",
+        "client_secret": "test-secret",
+        "client_name": "My Test App",
+        "redirect_uris": [
+          "http://localhost:9010/callback"
+        ],
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "scope": "openid profile email offline_access",
+        "token_endpoint_auth_method": "client_secret_basic"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -21,5 +21,9 @@ declare const _default: () => {
         publicUrl: string;
         adminUrl: string;
     };
+    hydra: {
+        adminUrl: string;
+        publicUrl: string;
+    };
 };
 export default _default;

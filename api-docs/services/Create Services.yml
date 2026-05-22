@@ -11,13 +11,12 @@ http:
     data: |-
       {
         "businessId": "90cce1e1-ca63-4ddd-817d-b4507ada5ee7",
+        "name": "Sauna Glow Massage",
         "categoryId": "3590a811-d1bf-4922-b84f-4481d999f2d2",
-        "name": "Hot Stone Steam",
-        "description": "Experience deep relaxation as smooth, heated basalt stones are combined with enveloping steam to melt away muscle tension and stress. This therapeutic treatment improves circulation, soothes aching joints, and leaves your skin feeling refreshed and renewed — all in just 30 minutes.",
-        "priceCents": 2500,
-        "durationMinutes": 30,
-        "coverImageUrl": "string",
-        "cancellationPolicy": "Free cancellation up to 24h before.",
+        "description": "Step into warmth and surrender to a deeply soothing massage that harnesses the healing power of sauna heat to loosen tight muscles and calm the mind. This restorative treatment improves circulation, relieves chronic tension, and leaves your skin with a healthy, radiant glow — all in just 60 minutes.",
+        "priceCents": 4500,
+        "durationMinutes": 60,
+        "coverImageUrl": "https://plus.unsplash.com/premium_photo-1661407350987-9e9319ac11e6?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "isActive": true
       }
   auth:

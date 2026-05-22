@@ -5,10 +5,16 @@ info:
 
 http:
   method: PATCH
-  url: |-
-    
-    {{base-api-url/bookings/business/5d344ba0-b049-45e2-8e12-f1b68b52898e/status
-  auth: inherit
+  url: "{{base-api-url}}/bookings/business/230fe521-bba0-417d-93a4-c122ac513005/status"
+  body:
+    type: json
+    data: |-
+      {
+        "status": "confirmed"
+      }
+  auth:
+    type: bearer
+    token: "{{business-access-token}}"
 
 settings:
   encodeUrl: true

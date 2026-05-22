@@ -6,8 +6,13 @@ definePageMeta({ layout: false });
 const { login, isAuthenticated, user } = useAuth();
 const { notify } = useNotify()
 const route = useRoute();
+const config = useRuntimeConfig();
+const baseURL = config.public.apiBase as string;
 
-if (isAuthenticated.value)
+// OAuth 2.0 context — present when Hydra redirected the user here
+const loginChallenge = route.query.login_challenge as string | undefined;
+
+if (isAuthenticated.value && !loginChallenge)
     navigateTo(
         user.value?.role === 'business_owner' ? '/business' : '/services',
     );
@@ -21,19 +26,38 @@ async function handleSubmit() {
     error.value = '';
     loading.value = true;
     try {
+        if (loginChallenge) {
+            // ── OAuth flow: authenticate via Kratos so the session cookie is set ──
+            const flow = await $fetch<{ id: string }>('/auth/kratos/login/flow', { baseURL });
+            await $fetch(`/auth/kratos/login?flow=${flow.id}`, {
+                method: 'POST',
+                baseURL,
+                credentials: 'include',
+                body: { method: 'password', identifier: email.value, password: password.value },
+            });
+            const { redirect_to } = await $fetch<{ redirect_to: string }>('/oauth/login', {
+                method: 'POST',
+                baseURL,
+                credentials: 'include',
+                body: { login_challenge: loginChallenge },
+            });
+            window.location.href = redirect_to;
+            return;
+        }
+
+        // ── Normal flow: JWT-based login ──
         await login(email.value, password.value);
         const redirect =
             (route.query.redirect as string) ||
             (user.value?.role === 'business_owner' ? '/business' : '/services');
         await navigateTo(redirect);
     } catch (e: any) {
-        error.value = e?.data?.message.message || 'Invalid email or password.';
+        error.value = e?.data?.message?.message || e?.data?.message || 'Invalid email or password.';
     } finally {
         loading.value = false;
     }
 }
 
-const config = useRuntimeConfig();
 const googleAuthUrl = `${config.public.apiBase}/auth/google`;
 </script>
 

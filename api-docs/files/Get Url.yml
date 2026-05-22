@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{base-api-url}}/files//url"
+  url: "{{base-api-url}}/files/567aecc0-80b9-4c9b-bcec-5988ea44a7ca/url"
   auth:
     type: bearer
     token: "{{business-access-token}}"

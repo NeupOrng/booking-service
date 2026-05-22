@@ -79,6 +79,41 @@ services:
     volumes:
       - ./config/kratos:/etc/config/kratos
 
+  # ==================== ORY HYDRA ====================
+
+  hydra-migrate:
+    image: oryd/hydra:v2.2.0
+    container_name: booking-hydra-migrate
+    environment:
+      - DSN=postgres://postgres:postgres@postgres:5432/hydra?sslmode=disable
+    command: migrate sql --yes postgres://postgres:postgres@postgres:5432/hydra?sslmode=disable
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  hydra:
+    image: oryd/hydra:v2.2.0
+    container_name: booking-hydra
+    ports:
+      - "4444:4444"   # Public API (token, auth endpoints)
+      - "4445:4445"   # Admin API (manage clients, challenges)
+    environment:
+      - DSN=postgres://postgres:postgres@postgres:5432/hydra?sslmode=disable
+      - SECRETS_SYSTEM=${HYDRA_SECRETS_SYSTEM:-youReallyNeedToChangeThisSecret1234}
+      - URLS_SELF_ISSUER=http://localhost:4444/
+      - URLS_LOGIN=http://localhost:3001/oauth/login
+      - URLS_CONSENT=http://localhost:3001/oauth/consent
+      - URLS_LOGOUT=http://localhost:3001/oauth/logout
+      - SERVE_PUBLIC_CORS_ENABLED=true
+      - SERVE_PUBLIC_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+      - LOG_LEVEL=info
+    command: serve all --dev
+    restart: unless-stopped
+    depends_on:
+      hydra-migrate:
+        condition: service_completed_successfully
+
 volumes:
   postgres_data:
   redis_data:

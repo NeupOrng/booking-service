@@ -1,0 +1,29 @@
+info:
+  name: Step 5 — Complete Hydra Login
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{base-api-url}}/oauth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "login_challenge": "{{LOGIN_CHALLENGE}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+
+        bru.setEnvVar("REDIRECT_TO_URL", response.redirect_to)
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

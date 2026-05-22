@@ -1,0 +1,33 @@
+info:
+  name: 0b. Submit registration
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/kratos/registration?flow={{FLOW_ID}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: flow
+      value: "{{FLOW_ID}}"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "method": "password",
+        "traits": {
+          "email": "oauthtest@example.com",
+          "full_name": "OAuth Test"
+        },
+        "password": "testpass123"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,23 @@
+info:
+  name: Step 3 — Get Kratos Login Flow
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{base-api-url}}/auth/kratos/login/flow"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+
+        bru.setEnvVar("KRATOS_FLOW_ID", response.id)
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

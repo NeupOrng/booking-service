@@ -12,6 +12,7 @@ import { ServicesModule } from './services/services.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { KratosModule } from './kratos/kratos.module';
+import { HydraModule } from './hydra/hydra.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -30,6 +31,7 @@ import configuration from './config/configuration';
     BookingsModule,
     ReviewsModule,
     KratosModule,
+    HydraModule,
   ],
   controllers: [AppController],
   providers: [AppService],

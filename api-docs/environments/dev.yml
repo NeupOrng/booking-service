@@ -2,3 +2,15 @@ name: dev
 variables:
   - name: base-api-url
     value: http://localhost:3001
+  - name: hydra-admin
+    value: http://localhost:4445
+  - name: hydra-public
+    value: http://localhost:4444
+  - name: kratos-register-flow-id
+    value: ba5394e7-0dc5-4b50-969f-a08174046032
+  - name: FLOW_ID
+    value: 7c08c1ff-8dd0-4908-9ae4-0645e1340ea4
+  - name: KRATOS_FLOW_ID
+    value: 076cbb1e-da16-4e79-8f95-0413cdd5bbd2
+  - name: kratos-login-flow-id
+    value: 3b797105-0a13-4784-a814-21fcc96a09f3

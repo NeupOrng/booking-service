@@ -5,13 +5,13 @@ info:
 
 http:
   method: POST
-  url: "{{base-api-url}}/auth/kratos/registration?flow={{kratos-login-flow-id}}"
+  url: "{{base-api-url}}/auth/kratos/registration?flow={{kratos-register-flow-id}}"
   headers:
     - name: Content-Type
       value: application/json
   params:
     - name: flow
-      value: "{{kratos-login-flow-id}}"
+      value: "{{kratos-register-flow-id}}"
       type: query
   body:
     type: json

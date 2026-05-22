@@ -1,0 +1,178 @@
+info:
+  name: hydra
+  type: folder
+  seq: 8
+
+request:
+  auth: inherit
+
+docs:
+  content: |
+    # OAuth 2.0 / OIDC Integration Test Guide
+
+    ## Bruno Environment Variables
+
+    | Variable | Value |
+    |---|---|
+    | `base-api-url` | `http://localhost:3001` |
+    | `hydra-admin` | `http://localhost:4445` |
+    | `hydra-public` | `http://localhost:4444` |
+
+    ---
+
+    ## Variable Reference
+
+    | Variable | Where to get it |
+    |---|---|
+    | `FLOW_ID` | Response `id` from Step 0a |
+    | `KRATOS_FLOW_ID` | Response `id` from Step 3 |
+    | `LOGIN_CHALLENGE` | Query param from Step 2 redirect URL |
+    | `CONSENT_CHALLENGE` | Query param from Step 5 redirect URL |
+    | `AUTH_CODE` | Query param `code` from Step 7 redirect URL |
+    | `ACCESS_TOKEN` | Response `access_token` from Step 8 |
+    | `ID_TOKEN` | Response `id_token` from Step 8 |
+    | `LOGOUT_CHALLENGE` | Query param from Step 10 redirect URL |
+
+    ---
+    # Full Test Sequence
+
+
+    ## STEP 0a — Get Kratos registration flow
+    ### → copy "id" as FLOW_ID
+
+    ```bash
+    curl --request GET \
+      --url {{base-api-url}}/auth/kratos/registration/flow
+    ```
+
+    ---
+    ## STEP 0b — Register a test user
+
+    ```bash
+    curl --request POST \
+      --url '{{base-api-url}}/auth/kratos/registration?flow={{FLOW_ID}}
+      --header 'content-type: application/json' \
+      --data '{
+      "method": "password",
+      "traits": {
+        "email": "oauthtest@example.com",
+        "full_name": "OAuth Test"
+      },
+      "password": "testpass123"
+    }'
+    ```
+    ---
+    ## STEP 1 — Create a Hydra OAuth client
+
+    ```bash
+    curl --request POST \
+      --url {{hydra-admin}}/admin/clients \
+      --header 'content-type: application/json' \
+      --data '{
+      "client_id": "test-client",
+      "client_secret": "test-secret",
+      "client_name": "My Test App",
+      "redirect_uris": [
+        "http://localhost:9010/callback"
+      ],
+      "grant_types": [
+        "authorization_code",
+        "refresh_token"
+      ],
+      "response_types": [
+        "code"
+      ],
+      "scope": "openid profile email offline_access",
+      "token_endpoint_auth_method": "client_secret_basic"
+    }'
+    ```
+    ---
+    ## STEP 2 — Start OAuth flow
+    ### → copy "login_challenge" from the redirect URL in the output
+
+    ```bash
+    curl --request GET \
+      --url 'http://localhost:4444/oauth2/auth?client_id=test-client&redirect_uri=http%3A%2F%2Flocalhost%3A9010%2Fcallback&response_type=code&scope=openid&scope=profile&scope=email&state=teststate123'
+    ```
+
+    ---
+    ## STEP 3 — Get Kratos login flow
+    ### → copy "id" as KRATOS_FLOW_ID
+
+    ```bash
+    curl -s {{base_url}}/auth/kratos/login/flow
+    ```
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 4 — Submit Kratos login (sets ory_kratos_session cookie)
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s -c ./cookies.txt \
+      -X POST "{{base_url}}/auth/kratos/login?flow=KRATOS_FLOW_ID" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "method": "password",
+        "identifier": "oauthtest@example.com",
+        "password": "testpass123"
+      }'
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 5 — Complete Hydra login
+    # → copy "redirect_to", then follow it to capture "consent_challenge"
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s -b ./cookies.txt \
+      -X POST {{base_url}}/oauth/login \
+      -H "Content-Type: application/json" \
+      -d '{ "login_challenge": "LOGIN_CHALLENGE" }'
+
+    curl -sv "REDIRECT_TO_URL" 2>&1 | grep "consent_challenge"
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 6 — Fetch consent info (client name, requested scopes)
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s "{{base_url}}/oauth/consent/info?consent_challenge=CONSENT_CHALLENGE"
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 7 — Accept consent
+    # → copy "redirect_to", then follow it to capture "code"
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s -b ./cookies.txt \
+      -X POST {{base_url}}/oauth/consent \
+      -H "Content-Type: application/json" \
+      -d '{
+        "consent_challenge": "CONSENT_CHALLENGE",
+        "grant_scopes": ["openid", "profile", "email"],
+        "remember": true,
+        "remember_for": 3600
+      }'
+
+    curl -sv "REDIRECT_TO_URL" 2>&1 | grep "code="
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 8 — Exchange authorization code for tokens
+    # → copy "access_token", "id_token", "refresh_token"
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s -X POST {{hydra_public}}/oauth2/token \
+      -u "test-client:test-secret" \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=authorization_code&code=AUTH_CODE&redirect_uri=http://localhost:9010/callback" \
+      | jq '{access_token, id_token, refresh_token, expires_in}'
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 9 — Introspect access token
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -s -X POST {{hydra_admin}}/admin/oauth2/introspect \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "token=ACCESS_TOKEN" \
+      | jq '{active, sub, scope, exp}'
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # STEP 10 — Logout
+    # → copy "logout_challenge" from the redirect URL, then call the backend handler
+    # ─────────────────────────────────────────────────────────────────────────────
+    curl -sv \
+      "{{hydra_public}}/oauth2/sessions/logout?id_token_hint=ID_TOKEN&post_logout_redirect_uri=http://localhost:3000" \
+      2>&1 | grep "logout_challenge"
+
+    curl -sv "{{base_url}}/oauth/logout?logout_challenge=LOGOUT_CHALLENGE"
+    ```
+  type: text/markdown

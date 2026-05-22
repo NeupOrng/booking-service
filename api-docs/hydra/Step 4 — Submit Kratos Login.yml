@@ -1,0 +1,30 @@
+info:
+  name: Step 4 — Submit Kratos Login
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{base-api-url}}/auth/kratos/login?flow={{KRATOS_FLOW_ID}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: flow
+      value: "{{KRATOS_FLOW_ID}}"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "method": "password",
+        "identifier": "oauthtest@example.com",
+        "password": "testpass123"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

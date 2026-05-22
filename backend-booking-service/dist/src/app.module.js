@@ -24,6 +24,7 @@ const services_module_1 = require("./services/services.module");
 const bookings_module_1 = require("./bookings/bookings.module");
 const reviews_module_1 = require("./reviews/reviews.module");
 const kratos_module_1 = require("./kratos/kratos.module");
+const hydra_module_1 = require("./hydra/hydra.module");
 const configuration_1 = __importDefault(require("./config/configuration"));
 let AppModule = class AppModule {
 };
@@ -44,6 +45,7 @@ AppModule = __decorate([
             bookings_module_1.BookingsModule,
             reviews_module_1.ReviewsModule,
             kratos_module_1.KratosModule,
+            hydra_module_1.HydraModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
